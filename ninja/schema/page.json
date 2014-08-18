@@ -1,0 +1,11 @@
+{
+	"_id": "Id",
+	"title": {
+		"maxLength": "200"
+	},
+	"template": "file",
+	"producer": "Page",
+	"article": {
+		"relation": "relCanHaveSome"
+	}
+}

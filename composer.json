@@ -1,0 +1,18 @@
+{
+	"name": "tomi20v/maui",
+	"description": "minimal.",
+	"minimum-stability": "stable",
+	"authors": [
+		{
+			"name": "author's name",
+			"email": "email@example.com"
+		}
+	],
+	"autoload": {
+		"classmap": [
+			"app/src",
+			"ninja/src",
+			"src/maui"
+		]
+	}
+}
