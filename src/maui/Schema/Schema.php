@@ -5,17 +5,27 @@ namespace Maui;
 class Schema {
 
 	// always store objects separately and just refer them
-	const REF_ALWAYS = 'refAlways';
+	const REF_REFERENCE = 'reference';
 	// store inline, move to reference if reused
-	const REF_AUTO = 'refMatch';
-	// never refer, jsut use the data in this schema
-	const REF_NEVER = 'refNever';
+	const REF_AUTO = 'auto';
+	// never refer, have the data inline
+	const REF_INLINE = 'inline';
 
-	const REL_NONE = 'relNone';
-	const REL_HASONE = 'relHasOne';
-	const REL_CANHAVEONE = 'relCanHaveOne';
-	const REL_CANHAVESOME = 'relCanHaveSome';
-	const REL_HASSOME = 'relHasSome';
+	/**
+	 * relation constants
+	 * @todo think it over, maybe the canhavesome and canhaveone shall be changed to
+	 *		hassome and hasone including the possibility of 0 and using with min and max
+	 */
+	// object has no relation like this. pretty useless
+	const REL_NONE = 'none';
+	// has exactly one
+	const REL_HASONE = 'hasOne';
+	// has 0 or 1
+	const REL_CANHAVEONE = 'canHaveOne';
+	// has 0, 1, or more
+	const REL_CANHAVESOME = 'canHaveSome';
+	// has 1 or more
+	const REL_HASSOME = 'hasSome';
 
 	protected $_schema = array();
 

@@ -9,15 +9,23 @@ class SchemaValidator {
 
 	protected $_value = null;
 
+	protected $_parent = null;
+
 	public static function from($validator, $validatorValue) {
 		if (is_callable($validator)) {
 			$Validator = new \SchemaValidatorCallback($validatorValue, $validator);
 		}
+		else die('TBI');
 		return $Validator;
 	}
 
-	function __construct($value) {
+	/**
+	 * @param mixed $value parameter value for validator
+	 * @param \Model $parent some validators (eg. which compare to or default to another field value) need this, some not
+	 */
+	function __construct($value, $parent=null) {
 		$this->_value = $value;
+		$this->_parent = $parent;
 	}
 
 	/**

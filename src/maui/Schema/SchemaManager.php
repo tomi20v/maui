@@ -11,48 +11,51 @@ class SchemaManager extends \Schema {
 
 	/**
 	 * I return the schema for $classname
-	 * @param string $className
+	 * @param string $context
 	 * @return \Schema
 	 * @throws \Exception
 	 */
-	public static function getSchema($classname) {
-		if (!array_key_exists($classname, self::$_pool)) {
+	public static function getSchema($context, $attr=null) {
+		$context = '\\' . trim($context, '\\');
+		if (!array_key_exists($context, self::$_pool)) {
 			throw new \Exception('schema not found');
 		}
-		return static::$_pool[$classname];
+		return static::$_pool[$context];
 	}
 
 	/**
 	 * I register a schema for an object
-	 * @param string $classname
+	 * @param string $context where the schema comes from, can be a plain classname
 	 * @param $schema
 	 * @return Schema
 	 */
-	public static function registerSchema($classname, &$schema) {
-		if (isset(self::$_pool[$classname])) {
-			throw new \Exception('schema for ' . $classname . ' already registered');
+	public static function registerSchema($context, $schema) {
+		$context = '\\' . trim($context, '\\');
+		if (isset(self::$_pool[$context])) {
+			throw new \Exception('schema for ' . $context . ' already registered');
 		}
-		$schema = static::from($schema);
-		self::$_pool[$classname] = $schema;
+		$schema = static::from($schema, $context);
+		self::$_pool[$context] = $schema;
+		echo 'registered: ' . $context."\n";
 		return $schema;
 	}
 
-	public static function from($schema) {
-		if ($schema instanceof \Schmea) {
+	public static function from($schema, $context) {
+		if ($schema instanceof \Schema) {
 			return $schema;
 		}
 		elseif (is_array($schema)) {
-			return static::_fromArray($schema);
+			return static::_fromArray($schema, $context);
 		}
-		else throw new \Exception('cannot create schema from unknown format');
+		throw new \Exception('cannot create schema from unknown format');
 	}
 
-	protected static function _fromArray($schema) {
+	protected static function _fromArray($schema, $context) {
 		$ret = new \Schema();
 		foreach ($schema as $eachKey=>$eachVal) {
 			// 'field' => 'Classname' reference
-			if (is_string($eachKey) && \SchemaReference::isSchemaReference($eachVal)) {
-				$ret->_schema[$eachKey] = \SchemaReference::from($eachVal, $eachKey);
+			if (is_string($eachKey) && \SchemaObject::isSchemaObject($eachVal)) {
+				$ret->_schema[$eachKey] = \SchemaObject::from($eachVal, $context, $eachKey);
 			}
 			// 'field' (just value, without key)
 			elseif (is_numeric($eachKey) && is_string($eachVal)) {

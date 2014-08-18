@@ -37,11 +37,18 @@ class SchemaAttr {
 		return true;
 	}
 
+	/**
+	 * I build a nice schema attribute object
+	 * @param array|\SchemaAttr $attrSchema
+	 * @param string $key key in parent object
+	 * @return static
+	 * @throws \Exception
+	 */
 	public static function from($attrSchema, $key=null) {
 		if ($attrSchema instanceof \SchemaAttr) {
 			return $attrSchema;
 		}
-		elseif (is_string($attrSchema)) {
+		elseif (is_string($attrSchema) && !is_numeric($key)) {
 			$SchemaAttr = new static();
 			$SchemaAttr->_key = $key;
 			return $SchemaAttr;
