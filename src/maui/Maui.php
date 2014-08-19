@@ -4,7 +4,7 @@ namespace Maui;
 
 class Maui {
 
-	protected static $_instance;
+	protected static $_instances = array();
 
 	/**
 	 * @var \MongoClient
@@ -17,43 +17,85 @@ class Maui {
 
 	protected static $_dbOptions = array("connect" => TRUE);
 
+	/**
+	 * I index the default instance
+	 */
+	const ENV_DEFAULT = 'default';
+	/**
+	 * development
+	 */
 	const ENV_DEV = 'envDev';
+	/**
+	 * testing
+	 */
 	const ENV_TEST = 'envTest';
+	/**
+	 * production
+	 */
 	const ENV_PROD = 'envProd';
 
-	public static $_env = \Maui\Maui::ENV_PROD;
+	/**
+	 * @var string environment of current instance. defaults to production to prevent accidentally putting online dev code...
+	 */
+	protected $_env = \Maui\Maui::ENV_PROD;
 
-	public static function instance() {
-		if (!isset(static::$_instance)) {
-			static::$_instance = new static();
+	/**
+	 * I return an instance
+	 * @param string $env instance to get. call without param to get default
+	 * @return mixed
+	 * @throws \Exception
+	 */
+	public static function instance($env=null) {
+		if (is_null($env) && empty(static::$_instances)) {
+			$env = \Maui\Maui::ENV_PROD;
 		}
-		return static::$_instance;
-	}
-
-	public static function setDbHost($dbHost) {
-		static::$_dbHost = $dbHost;
-	}
-
-	public static function db($key=null, $val=null) {
-		if (is_null(static::$_db)) {
-			static::$_db = new \MongoClient(static::$_dbHost, static::$_dbOptions);
+		if (is_null($env) && isset(static::$_instances[static::ENV_DEFAULT])) {
+			$env = static::ENV_DEFAULT;
 		}
-		return static::$_db;
+		elseif (!isset(static::$_instances[$env])) {
+			static::$_instances[$env] = new static($env);
+			if (empty(static::$_instances[static::ENV_DEFAULT])) {
+				static::$_instances[static::ENV_DEFAULT] = &static::$_instances[$env];
+			}
+		}
+		else {
+			throw new \Exception($env);
+		}
+		return static::$_instances[$env];
 	}
 
-	public static function dbDb($dbDb = null) {
+	public function setDbHost($dbHost) {
+		$this->_dbHost = $dbHost;
+	}
+
+	public function db($key=null, $val=null) {
+		if (is_null($this->_db)) {
+			$this->_db = new \MongoClient($this->_dbHost, $this->_dbOptions);
+		}
+		return $this->_db;
+	}
+
+	public function dbDb($dbDb = null) {
 		if (!is_null($dbDb)) {
-			static::$_dbDb = static::$_db->$dbDb;
+			$this->_dbDb = $this->_db->$dbDb;
 		}
-		elseif (is_string(static::$_dbDb)) {
-			$dbDb = static::$_dbDb;
-			static::$_dbDb = static::$_db->$dbDb;
+		elseif (is_string($this->_dbDb)) {
+			$dbDb = $this->_dbDb;
+			$this->_dbDb = $this->_db->$dbDb;
 		}
-		return static::$_dbDb;
+		return $this->_dbDb;
 	}
 
-	protected function __construct() {
+	protected function __construct($env) {
+		$this->_env = $env;
+	}
 
+	/**
+	 * I return my environment
+	 * @return string
+	 */
+	public function env() {
+		return $this->_env;
 	}
 
 }
