@@ -1,13 +1,23 @@
 {
 	"name": "tomi20v/maui",
-	"description": "minimal.",
-	"minimum-stability": "stable",
+	"description": "minimal mongoDB relational mapper built around dynamic schemas",
+	"minimum-stability": "dev",
 	"authors": [
 		{
-			"name": "author's name",
-			"email": "email@example.com"
+			"name": "t",
+			"email": "tomi20v@gmail.com"
 		}
 	],
+	"repositories": {
+		"tomi20v/tomi20v": {
+			"url": "git@github.com:tomi20v/echop",
+			"type": "git",
+			"reference": "master"
+		}
+	},
+	"require": {
+		"tomi20v/echop": "*"
+	},
 	"autoload": {
 		"classmap": [
 			"app/src",

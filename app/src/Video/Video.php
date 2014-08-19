@@ -1,18 +1,24 @@
 <?php
 
+use Maui\SchemaManager;
+
 class Video extends \Model {
 
 	protected static $_schema = array(
 		'user' => array(
 			'class' => 'User',
 			'referredField' => 'name',
-			'reference' => \Schema::REF_REFERENCE,
+			'reference' => SchemaManager::REF_REFERENCE,
 			'hasMin' => 1,
 			'hasMax' => 1,
 		),
 		'category' => 'Category',
+		'rating' => array(
+			'toString',
+			'in' => array('G','PG','PG-13','R','NC-17'),
+		),
 		'title' => array(
-			'type' => 'string',
+//			'toString',
 //			'valCustomFilter' => array(array('\SchemaValidatorMinLength::apply'), 5),
 //			array('\SchemaValidatorMinLength::apply', 5),
 //			'SchemaValidatorMinLength::_apply' => 5,
@@ -32,12 +38,12 @@ class Video extends \Model {
 		),
 		'director' => array(
 			'class' => 'Staff',
-			'reference' => \Schema::REF_REFERENCE,
+			'reference' => SchemaManager::REF_REFERENCE,
 		),
 		'staff' => array(
 			'label' => 'Cast',
 			'class' => 'Staff',
-			'reference' => \Schema::REF_INLINE,
+			'reference' => SchemaManager::REF_INLINE,
 //			'relation' => \Schema::REL_CANHAVESOME,
 			'hasMin' => 1,
 			'hasMax' => 5,

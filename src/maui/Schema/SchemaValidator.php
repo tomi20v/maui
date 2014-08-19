@@ -11,11 +11,17 @@ class SchemaValidator {
 
 	protected $_parent = null;
 
-	public static function from($validator, $validatorValue) {
+	public static function from($validator, $validatorValue, &$parent=null) {
 		if (is_callable($validator)) {
-			$Validator = new \SchemaValidatorCallback($validatorValue, $validator);
+			$Validator = new \SchemaValidatorCallback($validatorValue, $parent);
 		}
-		else die('TBI');
+		elseif (is_string($validator) && class_exists('\\SchemaValidator' . $validator)) {
+			$validatorClassname = '\\SchemaValidator' . $validator;
+			$Validator = new $validatorClassname($validatorValue, $parent);
+		}
+		else {
+			throw new \Exception('TBI');
+		}
 		return $Validator;
 	}
 

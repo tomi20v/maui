@@ -1,8 +1,10 @@
 <?php
 
+use Maui\SchemaManager;
+
 class User extends \Model {
 
-	protected static $_referred = \Schema::REF_REFERENCE;
+	protected static $_referred = SchemaManager::REF_REFERENCE;
 
 	protected static $_schema = array(
 		'_id',

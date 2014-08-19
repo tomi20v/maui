@@ -2,6 +2,8 @@
 
 namespace Maui;
 
+use Maui\SchemaManager;
+
 abstract class Model {
 
 	use \Maui\TraitHasLabel;
@@ -9,7 +11,7 @@ abstract class Model {
 	/**
 	 * made const so it's easy to get but final
 	 */
-	const REFERRED = \Schema::REF_AUTO;
+	const REFERRED = SchemaManager::REF_AUTO;
 
 	/**
 	 * @var mixed I will point to data root in heap

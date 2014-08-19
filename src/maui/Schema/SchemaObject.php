@@ -2,6 +2,8 @@
 
 namespace Maui;
 
+use Maui\SchemaManager;
+
 class SchemaObject {
 
 	use \Maui\TraitHasLabel;
@@ -20,7 +22,7 @@ class SchemaObject {
 	 * @var string storage class
 	 * @see Schema::REF_REFERENCE
 	 */
-	protected $_reference = \Schema::REF_INLINE;
+	protected $_reference = SchemaManager::REF_INLINE;
 
 	/**
 	 * @var string current object will refer this field, eg. 'user' => 'Admin' refers to the user who has field 'name' the same
