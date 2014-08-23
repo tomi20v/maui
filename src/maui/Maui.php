@@ -9,13 +9,13 @@ class Maui {
 	/**
 	 * @var \MongoClient
 	 */
-	protected static $_db;
+	protected $_dbClient;
 
-	protected static $_dbHost = 'mongodb://localhost:27017';
+	protected $_dbHost = 'mongodb://localhost:27017';
 
-	protected static $_dbDb = 'Maui';
+	protected $_dbDb = 'maui';
 
-	protected static $_dbOptions = array("connect" => TRUE);
+	protected $_dbOptions = array("connect" => TRUE);
 
 	/**
 	 * I index the default instance
@@ -42,7 +42,7 @@ class Maui {
 	/**
 	 * I return an instance
 	 * @param string $env instance to get. call without param to get default
-	 * @return mixed
+	 * @return \Maui
 	 * @throws \Exception
 	 */
 	public static function instance($env=null) {
@@ -66,22 +66,23 @@ class Maui {
 
 	public function setDbHost($dbHost) {
 		$this->_dbHost = $dbHost;
+		$this->_dbClient = null;
 	}
 
-	public function db($key=null, $val=null) {
-		if (is_null($this->_db)) {
-			$this->_db = new \MongoClient($this->_dbHost, $this->_dbOptions);
+	public function dbClient() {
+		if (is_null($this->_dbClient)) {
+			$this->_dbClient = new \MongoClient($this->_dbHost, $this->_dbOptions);
 		}
-		return $this->_db;
+		return $this->_dbClient;
 	}
 
 	public function dbDb($dbDb = null) {
 		if (!is_null($dbDb)) {
-			$this->_dbDb = $this->_db->$dbDb;
+			$this->_dbDb = $this->dbClient()->$dbDb;
 		}
 		elseif (is_string($this->_dbDb)) {
 			$dbDb = $this->_dbDb;
-			$this->_dbDb = $this->_db->$dbDb;
+			$this->_dbDb = $this->dbClient()->$dbDb;
 		}
 		return $this->_dbDb;
 	}
