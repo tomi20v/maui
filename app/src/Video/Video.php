@@ -5,6 +5,8 @@ use Maui\SchemaManager;
 class Video extends \Model {
 
 	protected static $_schema = array(
+		// this indeed is added automatically
+//		'_id',
 		'user' => array(
 			'class' => 'User',
 			'referredField' => 'name',
@@ -18,15 +20,14 @@ class Video extends \Model {
 			'in' => array('G','PG','PG-13','R','NC-17'),
 		),
 		'title' => array(
-//			'toString',
-//			'valCustomFilter' => array(array('\SchemaValidatorMinLength::apply'), 5),
+			'toString',
 //			array('\SchemaValidatorMinLength::apply', 5),
-//			'SchemaValidatorMinLength::_apply' => 5,
+//			'SchemaValidatorMinLength::_apply_' => 5,
 			'minLength' => 5,
 			'maxLength' => 30,
 		),
 		'subtitle' => array(
-			'notNull' => true,
+			'required',
 			'maxLength' => 50,
 		),
 		'description',
