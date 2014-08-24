@@ -160,4 +160,32 @@ class SchemaObject {
 		return $val;
 	}
 
+	/**
+	 * I return referred object from value
+	 * @param $val
+	 * @return mixed
+	 */
+	public function getReferredObject($val) {
+		$classname = $this->_class;
+		$ret = new $classname(array($this->_referredField => $val));
+		return $ret;
+	}
+
+	/**
+	 * I return object prop data based on relation reference (inline or referred)
+	 * @param $Obj
+	 * @return mixed
+	 * @throws \Exception
+	 */
+	public function getObjectData($Obj) {
+		switch ($this->_reference) {
+			case \SchemaManager::REF_INLINE:
+				return $Obj->getPropData();
+			case \SchemaManager::REF_REFERENCE:
+				return $Obj->prop($this->_referredField);
+			case \SchemaManager::REF_AUTO:
+				throw new \Exception('TBI');
+		};
+	}
+
 }

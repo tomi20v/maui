@@ -2,8 +2,6 @@
 
 namespace Maui;
 
-use Maui\SchemaManager;
-
 abstract class Model implements \IteratorAggregate {
 
 	use \Maui\TraitHasLabel;
@@ -11,8 +9,11 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * made const so it's easy to get but final
 	 */
-	const REFERRED = SchemaManager::REF_AUTO;
+	const REFERRED = \SchemaManager::REF_AUTO;
 
+	/**
+	 * @var array[] initial schema reference. will be unset. To use dynamic schemas override static function __init()
+	 */
 	protected static $_schema = array();
 
 	/**
@@ -25,8 +26,15 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	protected $_propData = array();
 
-	protected $_isValidated;
+	/**
+	 * @var boolean[] there will be a true for all fields validated after its value was set. [1] is true if all the
+	 * 		objects' fields are validated, [0] is true if all set props are validated
+	 */
+	protected $_isValidated = array();
 
+	/**
+	 * @var array[] collection of errors per field
+	 */
 	protected $_validationErrors = array();
 
 	public function __construct($idOrData=null) {
@@ -35,7 +43,7 @@ abstract class Model implements \IteratorAggregate {
 			static::__init();
 		}
 		if (is_array($idOrData)) {
-			$this->apply($idOrData);
+			$this->apply($idOrData, true);
 		}
 		elseif (is_object($idOrData) && $idOrData instanceof \Model) {
 			$this->apply($idOrData);
@@ -48,8 +56,6 @@ abstract class Model implements \IteratorAggregate {
 
 	public function __get($attr) {
 		switch(true) {
-			case $attr == 'Schema':
-				return \SchemaManager::getSchema(get_called_class());
 			case $this->hasAttr($attr):
 				return $this->prop($attr);
 			case $this->hasRelative($attr):
@@ -61,8 +67,6 @@ abstract class Model implements \IteratorAggregate {
 
 	public function __set($attr, $val) {
 		switch(true) {
-			case $attr == 'Schema':
-				throw new \Exception('schema cannot be written directly');
 			case $this->hasAttr($attr):
 				return $this->prop($attr, $val);
 			case $this->hasRelative($attr):
@@ -85,8 +89,12 @@ abstract class Model implements \IteratorAggregate {
 		\ModelManager::registerInited($classname);
 	}
 
+	/**
+	 * I iterate my schema
+	 * @return \ArrayIterator|\Traversable
+	 */
 	public function getIterator() {
-		return new \ArrayIterator(\SchemaManager::getSchema(get_called_class()));
+		return new \ArrayIterator(\SchemaManager::getSchema($this));
 	}
 
 	/**
@@ -94,68 +102,137 @@ abstract class Model implements \IteratorAggregate {
 	 * @param $classnameOrObject string|mixed
 	 */
 	public function to($classnameOrObject) {
-		throw new \Exception('TBI'); ;
+		throw new \Exception('TBI');
+	}
+
+	/**
+	 * I load by preset props
+	 */
+	public function load() {
+		$collectionName = $this->getCollectionName();
+		$Collection = null;
+		$Collection = \Maui::instance()->dbDb()->$collectionName;
+		$data = $Collection->findOne($this->getPropData());
+		$data = is_null($data) ? array() : $data;
+		$this->_attrData = $data;
+		$this->_propData = $data;
+		return $this;
+	}
+
+	public function loadIfNotLoaded() {
+		if (empty($this->_attrData)) {
+			$this->load();
+		}
+		return $this;
+	}
+
+	public function getPropData() {
+		$data = array();
+		$Schema = \SchemaManager::getSchema($this);
+		foreach($Schema as $eachKey=>$eachVal) {
+			if (array_key_exists($eachKey, $this->_propData)) {
+				$eachVal = $this->_propData[$eachKey];
+				if ($this->hasAttr($eachKey)) {
+					$data[$eachKey] = $eachVal;
+				}
+				elseif ($this->hasRelative($eachKey)) {
+					if (is_object($eachVal) && !($eachVal instanceof \MongoId)) {
+						$Rel = $Schema->attr($eachKey);
+						$eachVal = $Rel->getObjectData($eachVal);
+					}
+					$data[$eachKey] = $eachVal;
+				}
+			}
+		}
+		return $data;
+	}
+
+	/**
+	 * @return string
+	 * @extendMe
+	 */
+	public function getCollectionName() {
+		return str_replace('\\', '_', trim(get_class($this), '\\'));
 	}
 
 	public function find($by) {
 		throw new \Exception('TBI'); ;
 	}
 
-	public function save() {
+	public function save($fields=null, $deep=false) {
 		throw new \Exception('TBI'); ;
 	}
 
 	/**
 	 * I return if an attribute exists in my schema
-	 * @param string $attr
+	 *
+	 * @param string $key
 	 * @return bool
 	 */
-	public function hasAttr($attr) {
-		return $this->Schema->hasAttr($attr);
+	public function hasAttr($key) {
+		return \SchemaManager::getSchema($this)->hasAttr($key);
 	}
 
 	/**
 	 * I return an attribute value. Attr value should not be set by app code, so just getter.
-	 * @param $attr
+	 *
+	 * @param $key
 	 * @return mixed|null
 	 */
-	public function attr($attr) {
-		if (!$this->hasAttr($attr)) {
-			throw new \Exception('attr ' . $attr . ' does not exists');
+	public function attr($key) {
+		if (!$this->hasAttr($key)) {
+			throw new \Exception('attr ' . $key . ' does not exists');
 		}
-		return isset($this->_attrData[$attr]) ? $this->_attrData[$attr] : null;
+		return isset($this->_attrData[$key]) ? $this->_attrData[$key] : null;
 	}
 
 	/**
 	 * I return or set a property
-	 * @param $attr
+	 *
+	 * @param $key
 	 * @param null $value
 	 * @return mixed|null
 	 * @throws \Exception
 	 */
-	public function prop($attr, $value=null) {
-		if (!$this->hasAttr($attr)) {
-			throw new \Exception(echon($attr) . ' / ' . echon($value));
+	public function prop($key, $value=null) {
+		if (!$this->hasAttr($key)) {
+			throw new \Exception(echon($key) . ' / ' . echon($value));
 		}
 		elseif (count(func_get_args()) == 1) {
-			return array_key_exists($attr, $this->_propData)
-				? $this->_propData[$attr]
+			return array_key_exists($key, $this->_propData)
+				? $this->_propData[$key]
 				: null;
 		}
 		else {
-			return $this->_apply($attr, $value);
+			return $this->_apply($key, $value);
 		}
+	}
+
+	public function apply($data, $overwrite=false) {
+		if (!is_array($data)) {
+			throw new \Exception(echon($data));
+		}
+		elseif($overwrite) {
+			$this->_attrData = $data;
+			$this->_propData = $data;
+		}
+		else {
+			throw new \Exception('TBI');
+		}
+		return $this;
 	}
 
 	protected function _apply($key, $value) {
 		$wasNull = is_null($value);
-		$Attr = $this->Schema->attr($key);
+		$Attr = \SchemaManager::getSchema($this)->attr($key);
 		$value = $Attr->apply($value);
 		if (is_null($value) && !$wasNull) {
 			return null;
 		}
 		$this->_propData[$key] = $value;
-		$this->_isValidated = false;
+		$this->_isValidated[false] = false;
+		$this->_isValidated[true] = false;
+		$this->_isValidated[$key] = false;
 		return $value;
 	}
 
@@ -165,15 +242,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @return bool
 	 */
 	public function hasRelative($attr) {
-		return $this->Schema->hasRelative($attr);
-	}
-
-	/**
-	 * I return if I have
-	 * @param $classname string|mixed
-	 */
-	public function hasRelativeOf($classname) {
-		throw new \Exception('TBI'); ;
+		return \SchemaManager::getSchema($this)->hasRelative($attr);
 	}
 
 	/**
@@ -182,14 +251,23 @@ abstract class Model implements \IteratorAggregate {
 	 * @param $this|mixed $value
 	 */
 	public function relative($attr, $value=null) {
+
 		if (count(func_get_args()) == 1) {
-			return array_key_exists($attr, $this->_propData)
-				? $this->_propData[$attr]
-				: null;
+			 $ret = null;
+			if (array_key_exists($attr, $this->_propData)) {
+				$ret = $this->_propData[$attr];
+				if (is_object($ret) && !($ret instanceof \MongoId));
+				else {
+					$Rel = \SchemaManager::getSchema($this)->attr($attr);
+					$ret = $Rel->getReferredObject($this->_propData[$attr]);
+					$this->_propData[$attr] = $ret;
+				}
+			}
 		}
 		else {
 			throw new \Exception('TBI'); ;
 		}
+		return $ret;
 	}
 
 	/**
@@ -208,7 +286,8 @@ abstract class Model implements \IteratorAggregate {
 			case $key === true:
 				$this->_isValidated = array(true=>false, false=>false);
 				$this->_validationErrors = array();
-				foreach ($this->Schema as $eachKey=>$eachEl) {
+				$Schema = \SchemaManager::getSchema($this);
+				foreach ($Schema as $eachKey=>$eachEl) {
 //					echop('validating: ' . $eachKey);
 					$eachVal = $this->$eachKey;
 //					echop($eachVal);
@@ -230,7 +309,7 @@ abstract class Model implements \IteratorAggregate {
 				foreach ($key as $eachKey) {
 					unset($this->_validationErrors[$eachKey]);
 					$eachVal = $this->$eachKey;
-					$errors = $this->Schema->$eachKey->getErrors($eachVal);
+					$errors = \SchemaManager::getSchema($this)->$eachKey->getErrors($eachVal);
 					if (!empty($errors)) {
 						$this->_validationErrors[$eachKey] = $errors;
 					}
@@ -239,7 +318,7 @@ abstract class Model implements \IteratorAggregate {
 				if ($_key === false) {
 					$this->_isValidated[false] = true;
 				}
-				if ($key == array_keys($this->Schema->attrs())) {
+				if ($key == array_keys(\SchemaManager::getSchema($this)->attrs())) {
 					$this->_isValidated[true] = true;
 				}
 				$errors = array_intersect_key($this->_validationErrors, $key);
@@ -249,7 +328,7 @@ abstract class Model implements \IteratorAggregate {
 			case $this->hasRelative($key):
 				unset($this->_validationErrors[$key]);
 				$val = $this->$key;
-				$errors = $this->Schema->$key->getErrors($val);
+				$errors = \SchemaManager::getSchema($this)->$key->getErrors($val);
 				if (!empty($errors)) {
 					$this->_validationErrors[$key] = $errors;
 				};

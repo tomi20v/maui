@@ -70,7 +70,10 @@ class SchemaManager extends \Schema {
 	 * @return \Schema
 	 * @throws \Exception
 	 */
-	public static function &getSchema($context) {
+	public static function getSchema($context) {
+		if (is_object($context)) {
+			$context = get_class($context);
+		}
 		$context = '\\' . trim($context, '\\');
 		if (!array_key_exists($context, self::$_pool)) {
 			throw new \Exception('schema not found');
