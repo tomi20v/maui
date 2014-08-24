@@ -9,15 +9,19 @@ class SchemaValidatorToString extends \SchemaValidatorTo {
 	 * @param $val
 	 * @return bool
 	 */
-	public static function validate($val) {
+	public function validate($val) {
 		return is_scalar($val) || (is_object($val) && method_exists($val, '__toString'));
 	}
 
-	public static function _apply($val,  $validatorValue) {
-		if (!static::validate($val)) {
+	/**
+	 * @param $val
+	 * @return null|string
+	 */
+	public function apply($val) {
+		if (!$this->validate($val)) {
 			return null;
 		}
-		$val = (int) $val;
+		$val = (string) $val;
 		return $val;
 	}
 

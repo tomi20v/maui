@@ -2,8 +2,6 @@
 
 namespace Maui;
 
-use Maui\SchemaManager;
-
 class SchemaObject {
 
 	use \Maui\TraitHasLabel;
@@ -22,7 +20,7 @@ class SchemaObject {
 	 * @var string storage class
 	 * @see Schema::REF_REFERENCE
 	 */
-	protected $_reference = SchemaManager::REF_INLINE;
+	protected $_reference = \SchemaManager::REF_INLINE;
 
 	/**
 	 * @var string current object will refer this field, eg. 'user' => 'Admin' refers to the user who has field 'name' the same
@@ -144,6 +142,22 @@ class SchemaObject {
 			$SchemaObject->_key = $key;
 		}
 		return $SchemaObject;
+	}
+
+	public function validate() {
+		return true;
+	}
+
+	public function getErrors() {
+		return null;
+	}
+
+	public function apply($val) {
+		return $val;
+	}
+
+	public function filter($val) {
+		return $val;
 	}
 
 }

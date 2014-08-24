@@ -4,16 +4,32 @@ namespace Maui;
 
 class SchemaValidatorMaxLength extends \SchemaValidator {
 
-	public static function _apply($val,  $validatorValue) {
+	public function validate($val) {
 		if (is_string($val)) {
-			$val = mb_substr($val, 0,  $validatorValue);
+			return mb_strlen($val) <= $this->_value;
 		}
 		else if (is_array($val)) {
-			//$len = count($val);
-			$val = array_slice($val, 0, $validatorValue, true);
+			return count($val) <= $this->_value;
+		}
+		return null;
+	}
+
+	public function getError($val) {
+		return 'max length' . $this->_value;
+	}
+
+	public function apply($val) {
+		return (is_string($val) || is_array($val)) ? $val : null;
+	}
+
+	public function filter($val) {
+		if (is_string($val)) {
+			return mb_substr($val, 0,  $this->_value);
+		}
+		else if (is_array($val)) {
+			return array_slice($val, 0, $this->_value, true);
 		}
 		else return null;
-		return $val;
 	}
 
 }

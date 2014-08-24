@@ -2,6 +2,12 @@
 
 namespace Maui;
 
+/**
+ * Class SchemaManager
+ * I extend Schema so I can directly manipulate its data
+ *
+ * @package Maui
+ */
 class SchemaManager extends \Schema {
 
 	/**
@@ -64,7 +70,7 @@ class SchemaManager extends \Schema {
 	 * @return \Schema
 	 * @throws \Exception
 	 */
-	public static function getSchema($context, $attr=null) {
+	public static function &getSchema($context) {
 		$context = '\\' . trim($context, '\\');
 		if (!array_key_exists($context, self::$_pool)) {
 			throw new \Exception('schema not found');
@@ -85,7 +91,7 @@ class SchemaManager extends \Schema {
 		}
 		$schema = static::from($schema, $context);
 		self::$_pool[$context] = $schema;
-		echo 'registered: ' . $context."\n";
+//		echo 'registered: ' . $context."\n";
 		return $schema;
 	}
 
@@ -96,9 +102,17 @@ class SchemaManager extends \Schema {
 		elseif (is_array($schema)) {
 			return static::_fromArray($schema, $context);
 		}
+		echop($schema); debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 		throw new \Exception('cannot create schema from unknown format');
 	}
 
+	/**
+	 * construct Schema object from array definition
+	 * @param $schema
+	 * @param $context
+	 * @return \Schema
+	 * @throws \Exception
+	 */
 	protected static function _fromArray($schema, $context) {
 		$ret = new \Schema();
 		foreach ($schema as $eachKey=>$eachVal) {
@@ -114,13 +128,35 @@ class SchemaManager extends \Schema {
 				$ret->_schema[$eachKey] = \SchemaAttr::from($eachVal, $eachKey);
 			}
 			else {
-				print_r($eachKey);
-				print_r($eachVal);
-				die ('FU');
-//				throw new \Exception();
+				throw new \Exception(echon($eachKey) . echon($eachVal));
 			}
 		}
 		return $ret;
+	}
+
+	/**
+	 * I add _id field definition to $Schema if it doesn't have it
+	 * @param $schema
+	 */
+	static function ensureHasId($schema) {
+		if (!array_key_exists('_id', $schema)) {
+			$schema = array_reverse($schema);
+			$schema['_id'] = static::_getIdDef_();
+			$schema = array_reverse($schema);
+		};
+		return $schema;
+	}
+
+	/**
+	 * I return ID field def. you can override it
+	 * @return array
+	 */
+	protected static function _getIdDef_() {
+		return array(
+			'label' => 'ID',
+			'toId',
+//			'unique',
+		);
 	}
 
 }

@@ -4,12 +4,21 @@ namespace Maui;
 
 class SchemaValidatorToInt extends \SchemaValidatorTo {
 
-	public static function validate($val) {
+	/**
+	 * @param $val
+	 * @return bool
+	 */
+	public function validate($val) {
 		return is_scalar($val);
 	}
 
-	public static function _apply($val,  $validatorValue) {
-		if (!static::validate($val)) {
+	/**
+	 * @param $val
+	 * @param $validatorValue
+	 * @return int|null
+	 */
+	public function apply($val) {
+		if (!$this::validate($val)) {
 			return null;
 		}
 		$val = (int) $val;

@@ -4,19 +4,32 @@ namespace Maui;
 
 class SchemaValidatorMinLength extends \SchemaValidator {
 
-	public static function _apply($val,  $validatorValue) {
+	public function validate($val) {
 		if (is_string($val)) {
-			if (mb_strlen($val) < $validatorValue) {
-				return null;
-			}
+			return mb_strlen($val) >= $this->_value;
 		}
 		else if (is_array($val)) {
-			if (count($val) < $validatorValue) {
-				return null;
-			}
+			return count($val) >= $this->_value;
+		}
+		return null;
+	}
+
+	public function getError($val) {
+		return 'min length ' . $this->_value;
+	}
+
+	public function apply($val) {
+		return (is_string($val) || is_array($val)) ? $val : null;
+	}
+
+	public function filter($val) {
+		if (is_string($val)) {
+			return mb_substr($val, 0,  $this->_value);
+		}
+		else if (is_array($val)) {
+			return array_slice($val, 0, $this->_value, true);
 		}
 		else return null;
-		return $val;
 	}
 
 }
