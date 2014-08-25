@@ -11,11 +11,11 @@ class SchemaValidatorCallback extends \SchemaValidator {
 		$this->_callback = $callback;
 	}
 
-	public function validate($val) {
+	public function validate($val, $Model=null) {
 		throw new \Exception('TBI');
 	}
 
-	public function apply($val,  $validatorValue) {
+	public function apply($val, $Model=null) {
 		throw new \Exception('TBI');
 	}
 

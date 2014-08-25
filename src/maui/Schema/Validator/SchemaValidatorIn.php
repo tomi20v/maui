@@ -11,7 +11,7 @@ class SchemaValidatorIn extends \SchemaValidator {
 		return parent::from($validator, $validatorValue, $parent);
 	}
 
-	public function validate($val) {
+	public function validate($val, $Model=null) {
 		if (is_scalar($val)) {
 			return in_array($val, $this->_value);
 		}
@@ -22,18 +22,12 @@ class SchemaValidatorIn extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val) {
+	public function getError($val, $Model=null) {
 		return 'not in {' . implode(', ', $this->_value) . '}';
 	}
 
-	public function filter($val) {
-		if (is_scalar($val)) {
-			return in_array($val, $this->_value) ? $val : null;
-		}
-		elseif (is_array($val)) {
-			return array_intersect($val, $this->_value);
-		}
-		return null;
+	public function apply($val, $Model=null) {
+ 		return is_scalar($val) || is_array($val) ? $val : null;
 	}
 
 }

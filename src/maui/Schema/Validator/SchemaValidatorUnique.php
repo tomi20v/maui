@@ -12,20 +12,12 @@ class SchemaValidatorUnique extends \SchemaValidator {
 	 * @param $val
 	 * @return bool true
 	 */
-	public function validate($val) {
+	public function validate($val, $Model=null) {
 		return true;
 	}
 
-	/**
-	 * I don't convert
-	 */
-	protected static function _apply_($val, $validatorValue) {
-		return $val;
-	}
-
-	public function beforeSave() {
-		throw new \Exception('TBI');
-		return true;
+	public function getError($val, $Model=null) {
+		return 'not unique';
 	}
 
 }

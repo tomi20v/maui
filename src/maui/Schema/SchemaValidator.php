@@ -48,7 +48,7 @@ class SchemaValidator {
 	 * @return bool
 	 * @extendMe
 	 */
-	public function validate($val) {
+	public function validate($val, $Model=null) {
 		return true;
 	}
 
@@ -58,26 +58,18 @@ class SchemaValidator {
 	 * @return string
 	 * @extendMe
 	 */
-	public function getError($val) {
+	public function getError($val, $Model=null) {
 		return 'failed ' . get_called_class() . '(' . $this->_value . ')';
 	}
 
 	/**
-	 * I return a value applied to this attr. Note it can still be invalid.
+	 * I return a value applied to this field. I basicly do typecasting. Note that value can still be invalid.
+	 * 	if I cannot interpret $val for validation (eg. an array is passed to 'min' validator), I shall return null
 	 * @param $val
 	 * @return mixed|null apply() should return null if $val is not applicable
 	 * @extendMe
 	 */
-	public function apply($val) {
-		return $val;
-	}
-
-	/**
-	 * I return a value similar to $val but which passes my rule. Eg. a max(5) validator returns 5 if $val>5
-	 * @param $val
-	 * @return mixed
-	 */
-	public function filter($val) {
+	public function apply($val, $Model=null) {
 		return $val;
 	}
 

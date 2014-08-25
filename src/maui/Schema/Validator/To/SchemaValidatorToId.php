@@ -29,12 +29,4 @@ class SchemaValidatorToId extends \SchemaValidatorTo {
 		return null;
 	}
 
-	/**
-	 * @todo here I should ensure ID is loaded after an insert
-	 * @throws \Exception
-	 */
-	public function afterSave() {
-		throw new \Exception('TBI');
-	}
-
 }
