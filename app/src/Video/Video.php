@@ -1,7 +1,5 @@
 <?php
 
-use Maui\SchemaManager;
-
 class Video extends \Model {
 
 	protected static $_schema = array(
@@ -10,7 +8,7 @@ class Video extends \Model {
 		'user' => array(
 			'class' => 'User',
 			'referredField' => 'name',
-			'reference' => SchemaManager::REF_REFERENCE,
+			'reference' => \SchemaManager::REF_REFERENCE,
 			'hasMin' => 1,
 			'hasMax' => 1,
 		),
@@ -39,12 +37,12 @@ class Video extends \Model {
 		),
 		'director' => array(
 			'class' => 'Staff',
-			'reference' => SchemaManager::REF_REFERENCE,
+			'reference' => \SchemaManager::REF_REFERENCE,
 		),
 		'staff' => array(
 			'label' => 'Cast',
 			'class' => 'Staff',
-			'reference' => SchemaManager::REF_INLINE,
+			'reference' => \SchemaManager::REF_INLINE,
 //			'relation' => \Schema::REL_CANHAVESOME,
 			'hasMin' => 1,
 			'hasMax' => 5,

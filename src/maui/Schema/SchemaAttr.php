@@ -91,14 +91,18 @@ class SchemaAttr {
 	 * I return true if $val passes all validators
 	 * @param $val
 	 * @param null $Model send Model object to validate in context (eg. unique)
-	 * @return bool
+	 * @return bool true if validation succeeded, false if could be validated but failed, null if
+	 * 		could not validate - eg. the toInt validator will return null on an object type val
+	 *		as it cannot cast object to int for validation
+	 * NOTE validation sequence matters as validation will stop on a first null response. This
+	 * 		can solve the problem of displaying failed 'min' and 'max' errors if field contains text
 	 */
 	public function validate($val, $Model=null) {
 		if (is_null($val) && $this->_required) {
 			return false;
 		}
-		foreach($this->_validators as $eachValidator) {
-			if (!$eachValidator->validate($val, $Model)) {
+		foreach($this->_validators as $EachValidator) {
+			if (!$EachValidator->validate($val, $Model)) {
 				return false;
 			}
 		}
@@ -119,9 +123,13 @@ class SchemaAttr {
 			}
 		}
 		else {
-			foreach ($this->_validators as $eachValidator) {
-				if (!$eachValidator->validate($val, $Model)) {
-					$errors[] = $eachValidator->getError($val, $Model);
+			foreach ($this->_validators as $EachValidator) {
+				$result = $EachValidator->validate($val, $Model);
+				if (!$result) {
+					$errors[] = $EachValidator->getError($val, $Model);
+				}
+				if (is_null($result)) {
+					break;
 				}
 			}
 		}
@@ -143,8 +151,8 @@ class SchemaAttr {
 	 */
 	public function apply($val, $Model=null) {
 		$wasNull = is_null($val);
-		foreach ($this->_validators as $eachValidator) {
-			$val = $eachValidator->apply($val, $Model=null);
+		foreach ($this->_validators as $EachValidator) {
+			$val = $EachValidator->apply($val, $Model=null);
 			if (is_null($val) && !$wasNull) {
 				return $val;
 			}

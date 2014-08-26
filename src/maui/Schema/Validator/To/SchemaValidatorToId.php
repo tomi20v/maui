@@ -10,8 +10,11 @@ class SchemaValidatorToId extends \SchemaValidatorTo {
 	 * @param $val
 	 * @return bool
 	 */
-	public function validate($val) {
-		return ($val instanceof \MongoId) && preg_match(static::FORMAT, (string)$val);
+	public function validate($val, $Model=null) {
+		if (($val instanceof \MongoId) && preg_match(static::FORMAT, (string)$val)) {
+			return true;
+		}
+		return null;
 	}
 
 	/**
@@ -19,7 +22,7 @@ class SchemaValidatorToId extends \SchemaValidatorTo {
 	 * @param $validatorValue
 	 * @return int|null
 	 */
-	public function apply($val) {
+	public function apply($val, $Model=null) {
 		if ($val instanceof \MongoId) {
 			return $val;
 		}
@@ -27,6 +30,10 @@ class SchemaValidatorToId extends \SchemaValidatorTo {
 			return new \MongoId($val);
 		}
 		return null;
+	}
+
+	public function getError($val, $Model=null) {
+		return 'shall be an ID';
 	}
 
 }

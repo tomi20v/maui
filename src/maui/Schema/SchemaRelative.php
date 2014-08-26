@@ -2,7 +2,7 @@
 
 namespace Maui;
 
-class SchemaObject {
+class SchemaRelative {
 
 	use \Maui\TraitHasLabel;
 
@@ -50,12 +50,13 @@ class SchemaObject {
 
 	/**
 	 * I tell if $objectSchema is valid definition for an object
-	 * @param array|\SchemaObject $objectSchema
+	 *
+*@param array|\SchemaRelative $objectSchema
 	 * @return bool
 	 */
 	public static function isSchemaObject($objectSchema) {
 		if (is_string($objectSchema));
-		elseif ($objectSchema instanceof \SchemaObject);
+		elseif ($objectSchema instanceof \SchemaRelative);
 		elseif (is_array($objectSchema)) {
 			// if array, a 'reference' => 'classname' is expected
 			if (!isset($objectSchema['class'])) {
@@ -69,13 +70,14 @@ class SchemaObject {
 
 	/**
 	 * I create and return an object based from $objectSchema
-	 * @param array|\SchemaObject $objectSchema anything accepted by isSchemaObject()
+	 *
+*@param array|\SchemaRelative $objectSchema anything accepted by isSchemaObject()
 	 * @param null|string $key key in schema definition, used as 'class' if class is not defined in the object
-	 * @return \SchemaObject|static
+	 * @return \SchemaRelative|static
 	 * @throws \Exception
 	 */
 	public static function from($objectSchema, $context, $key=null) {
-		if ($objectSchema instanceof \SchemaObject) {
+		if ($objectSchema instanceof \SchemaRelative) {
 			$SchemaObject = $objectSchema;
 		}
 		elseif (is_string($objectSchema) && !is_null($key)) {
@@ -180,10 +182,11 @@ class SchemaObject {
 	public function getObjectData($Obj) {
 		switch ($this->_reference) {
 			case \SchemaManager::REF_INLINE:
-				return $Obj->getPropData();
+				return $Obj->getData();
 			case \SchemaManager::REF_REFERENCE:
-				return $Obj->prop($this->_referredField);
+				return $Obj->data($this->_referredField);
 			case \SchemaManager::REF_AUTO:
+			default:
 				throw new \Exception('TBI');
 		};
 	}

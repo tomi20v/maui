@@ -5,12 +5,13 @@
  */
 die();
 
+class Collection extends \Maui\Collection{}
 class Maui extends \Maui\Maui {}
 abstract class Model extends \Maui\Model {}
 class ModelManager extends \Maui\ModelManager{}
 class Schema extends \Maui\Schema{}
 class SchemaAttr extends \Maui\SchemaAttr{}
 class SchemaManager extends \Maui\SchemaManager{}
-class SchemaObject extends \Maui\SchemaObject{}
+class SchemaRelative extends \Maui\SchemaRelative{}
 class SchemaValidator extends \Maui\SchemaValidator{}
 class SchemaValidatorTo extends \Maui\SchemaValidatorTo{}

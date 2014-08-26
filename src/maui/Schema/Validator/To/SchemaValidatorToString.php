@@ -4,25 +4,26 @@ namespace Maui;
 
 class SchemaValidatorToString extends \SchemaValidatorTo {
 
-	/**
-	 * I accept scalars and objects with __toString() method
-	 * @param $val
-	 * @return bool
-	 */
-	public function validate($val) {
-		return is_scalar($val) || (is_object($val) && method_exists($val, '__toString'));
+	public function validate($val, $Model=null) {
+		if (is_scalar($val)) {
+			return true;
+		}
+		elseif (is_object($val)) {
+			return method_exists($val, '__toString');
+		}
+		return null;
 	}
 
-	/**
-	 * @param $val
-	 * @return null|string
-	 */
-	public function apply($val) {
+	public function apply($val, $Model=null) {
 		if (!$this->validate($val)) {
 			return null;
 		}
 		$val = (string) $val;
 		return $val;
+	}
+
+	public function getError($val, $Model=null) {
+		return 'shall be a string';
 	}
 
 }

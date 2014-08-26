@@ -19,12 +19,12 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * @var array|null I will point to data root in heap
 	 */
-	protected $_attrData = array();
+	protected $_originalData = array();
 
 	/**
 	 * @var array|null
 	 */
-	protected $_propData = array();
+	protected $_data = array();
 
 	/**
 	 * @var boolean[] there will be a true for all fields validated after its value was set. [1] is true if all the
@@ -37,16 +37,24 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	protected $_validationErrors = array();
 
-	public function __construct($idOrData=null) {
+	////////////////////////////////////////////////////////////////////////////////
+	// basic & magic
+	////////////////////////////////////////////////////////////////////////////////
+
+	public function __construct($idOrData=null, $dataIsOriginal=false) {
 		$classname = get_called_class();
 		if (!\ModelManager::isInited($classname)) {
 			static::__init();
 		}
 		if (is_array($idOrData)) {
-			$this->apply($idOrData, true);
+			$this->apply($idOrData, $dataIsOriginal);
+//			$this->data($idOrData, $dataIsOriginal);
 		}
-		elseif (is_object($idOrData) && $idOrData instanceof \Model) {
-			$this->apply($idOrData);
+//		elseif (is_object($idOrData) && $idOrData instanceof \Model) {
+//			$this->apply($idOrData);
+//		}
+		elseif (is_object($idOrData) && $idOrData instanceof \MongoId) {
+			$this->_id = $idOrData;
 		}
 		elseif (is_string($idOrData)) {
 			$this->_id = new \MongoId($idOrData);
@@ -54,26 +62,18 @@ abstract class Model implements \IteratorAggregate {
 		// @todo register the model here if already has ID. also write setID() which registers the object
 	}
 
-	public function __get($attr) {
-		switch(true) {
-			case $this->hasAttr($attr):
-				return $this->prop($attr);
-			case $this->hasRelative($attr):
-				return $this->relative($attr);
-			default:
-				throw new \Exception(echon($attr));
+	public function __get($key) {
+		if ($this->hasField($key)) {
+			return $this->field($key);
 		}
+		throw new \Exception(echon($key));
 	}
 
-	public function __set($attr, $val) {
-		switch(true) {
-			case $this->hasAttr($attr):
-				return $this->prop($attr, $val);
-			case $this->hasRelative($attr):
-				return $this->relative($attr, $val);
-			default:
-				throw new \Exception(echon($attr) . echon($val));
+	public function __set($key, $val) {
+		if ($this->hasField($key)) {
+			return $this->field($key, $val);
 		}
+		throw new \Exception(echon($key) . echon($val));
 	}
 
 	/**
@@ -94,51 +94,193 @@ abstract class Model implements \IteratorAggregate {
 	 * @return \ArrayIterator|\Traversable
 	 */
 	public function getIterator() {
-		return new \ArrayIterator(\SchemaManager::getSchema($this));
+		return new \ArrayIterator($this->_getSchema());
+	}
+
+	protected function _getSchema() {
+		return \SchemaManager::getSchema($this);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	//	CRUD etc
+	////////////////////////////////////////////////////////////////////////////////
+
+	protected function _getDbCollection() {
+		$collectionClassname = $this->getCollectionClassName();
+		$collectionName = $collectionClassname::getCollectionName();
+		return \Maui::instance()->dbDb()->$collectionName;
 	}
 
 	/**
-	 * I return current object cast to another class
-	 * @param $classnameOrObject string|mixed
+	 * I return empty collection for this class
+	 * @param null $data
+	 * @return mixed
+	 * @extendMe eg. in case reusing a collection class for multiple models
 	 */
-	public function to($classnameOrObject) {
-		throw new \Exception('TBI');
+	public static function getCollection($data=null) {
+		$classname = static::getCollectionClassName();
+		return new $classname($data);
 	}
 
 	/**
-	 * I load by preset props
+	 * This shall be the name of the collection in DB as well as the collection classname
+	 * @return string
+	 * @extendMe you can reuse collections for different models with this
+	 */
+	public static function getCollectionClassName() {
+		return ucfirst(get_called_class()) . 'Collection';
+	}
+
+	/**
+	 * I load by modified attributes
 	 */
 	public function load() {
-		$collectionName = $this->getCollectionName();
-		$Collection = null;
-		$Collection = \Maui::instance()->dbDb()->$collectionName;
-		$data = $Collection->findOne($this->getPropData());
+		$Collection = $this->_getDbCollection();
+		$data = $Collection->findOne($this->getData(false));
 		$data = is_null($data) ? array() : $data;
-		$this->_attrData = $data;
-		$this->_propData = $data;
+		$this->_originalData = $data;
+		$this->_data = array();
 		return $this;
 	}
 
-	public function loadIfNotLoaded() {
-		if (empty($this->_attrData)) {
+	/**
+	 * I load data if hasn't been loaded yet
+	 * @return $this
+	 */
+	public function ensureLoaded() {
+		if (empty($this->_originalData)) {
 			$this->load();
 		}
 		return $this;
 	}
 
-	public function getPropData() {
-		$data = array();
-		$Schema = \SchemaManager::getSchema($this);
-		foreach($Schema as $eachKey=>$eachVal) {
-			if (array_key_exists($eachKey, $this->_propData)) {
-				$eachVal = $this->_propData[$eachKey];
-				if ($this->hasAttr($eachKey)) {
-					$data[$eachKey] = $eachVal;
+	public function find($by) {
+		throw new \Exception('TBI'); ;
+	}
+
+	/**
+	 * @param bool|string[] $fieldsOrDeepsave
+	 * 	true - do deep save (trigger save on all related objects). No save if no change
+	 *  false - only save this objects' updated fields. No save if no change
+	 *  string[] - saves the given fields, regardless if they have been changed
+	 * @param \Model[] this param is to be passed recursively and holds all objects' ID which's
+	 * 		save has been triggered already. This avoids infinite recursion in case of cyclic references
+	 * @return $this|null - to be clarified
+	 * @throws \Exception
+	 */
+	public function save($fieldsOrDeepsave=true, &$excludedObjectIds=array()) {
+		$DbCollection = $this->_getDbCollection();
+		// do deep validation and save
+		if ($fieldsOrDeepsave === true) {
+			// first save referenced relatives
+			// @todo - implement deep save...
+//			$relatives = $this->_getReferencedRelatives();
+//			foreach ($relatives as $EachRelative) {
+//				$EachRelative->save(true, $excludedObjectIds);
+//			}
+			// save only if there is actual data
+			if (!empty($this->_data)) {
+				$data = $this->getData(true);
+				$result = $DbCollection->save(
+					$data
+				);
+				if (isset($result['ok']) && $result['ok']) {
+					$this->_originalData = $data;
+					$this->_data = array();
 				}
+			}
+			return $result;
+		}
+		elseif ($fieldsOrDeepsave === false) {
+			if (empty($this->_data)) {
+				return $this;
+			}
+			if (!$this->validate(false)) {
+				return null;
+			}
+			$data = $this->getData(false);
+			if ($this->_id) {
+				$result = $DbCollection->update(
+					array('_id' => $this->_id),
+					array('$set' => $data)
+				);
+			}
+			else {
+				$result = $DbCollection->save(
+					$data
+				);
+			}
+			if (isset($result['ok']) && $result['ok']) {
+				foreach ($data as $eachKey=>$eachVal) {
+					$this->_originalData[$eachKey] = $eachVal;
+					unset($this->_data[$eachKey]);
+				}
+			}
+			// I might want to save return value?
+			return $result;
+		}
+		elseif (is_array($fieldsOrDeepsave)) {
+			throw new \Exception('TBI');
+		}
+
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	// setters getters, data related
+	////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * I wrap data getter methods, see code for examples
+	 *
+	 * @param null|string|array $keyOrData
+	 * @param null|mixed|boolean $valOrDataIsOriginal
+	 * @return array|mixed|null
+	 */
+	public function data($keyOrData=null, $valOrDataIsOriginal=null) {
+	 	$num = func_num_args();
+		// ->data() returns actual data array
+		if (is_null($keyOrData) && is_null($valOrDataIsOriginal)) {
+			return $this->getData();
+		}
+		// ->data($key) returns value of field on key $key
+		elseif (($num == 1) && is_string($keyOrData)) {
+			return $this->$keyOrData;
+		}
+		// ->data(array(...)) sets data
+		elseif (($num == 1) && is_array($keyOrData)) {
+			$this->apply($keyOrData);
+		}
+		// ->data(array(...), true) sets originalData and clears data
+		elseif (($num == 2) && is_array($keyOrData) && ($valOrDataIsOriginal===true)) {
+			$this->apply($keyOrData, true);
+		}
+		// ->data($key, $val) sets field $key to $val (can be field or relative)
+		elseif (($num == 2) && is_string($keyOrData)) {
+			$this->$keyOrData = $valOrDataIsOriginal;
+		}
+	}
+
+	/**
+	 * I return current data representation
+	 * @param bool $allOrChanged if true, all data is returned, if false, just the changed fields plus ID, otherwise nothing...
+	 * @return array
+	 */
+	public function getData($allOrChanged = true) {
+		$data = array();
+		$Schema = $this->_getSchema();
+		foreach($Schema as $eachKey=>$EachField) {
+			// if I have this property set
+			if ((($allOrChanged === true) && (array_key_exists($eachKey, $this->_originalData)||array_key_exists($eachKey, $this->_data)) ||
+				(($allOrChanged === false) && array_key_exists($eachKey, $this->_data)))) {
+				$eachVal = $this->field($eachKey);
+				// if it's an attribute, get applied value
+				if ($this->hasAttr($eachKey)) {
+					$data[$eachKey] = $EachField->apply($eachVal);
+				}
+				// if a relative, get its data through the relation object
 				elseif ($this->hasRelative($eachKey)) {
 					if (is_object($eachVal) && !($eachVal instanceof \MongoId)) {
-						$Rel = $Schema->attr($eachKey);
-						$eachVal = $Rel->getObjectData($eachVal);
+						$eachVal = $EachField->getObjectData($eachVal);
 					}
 					$data[$eachKey] = $eachVal;
 				}
@@ -148,63 +290,134 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * @return string
-	 * @extendMe
-	 */
-	public function getCollectionName() {
-		return str_replace('\\', '_', trim(get_class($this), '\\'));
-	}
-
-	public function find($by) {
-		throw new \Exception('TBI'); ;
-	}
-
-	public function save($fields=null, $deep=false) {
-		throw new \Exception('TBI'); ;
-	}
-
-	/**
 	 * I return if an attribute exists in my schema
 	 *
 	 * @param string $key
 	 * @return bool
 	 */
-	public function hasAttr($key) {
-		return \SchemaManager::getSchema($this)->hasAttr($key);
+	public function hasField($key) {
+		return $this->_getSchema()->hasField($key);
+	}
+
+	public function field($key, $val=null) {
+		if (!$this->hasField($key)) {
+			throw new \Exception('field ' . $key . ' does not exists');
+		}
+		if (func_num_args() == 1) {
+			if ($this->hasAttr($key)) {
+				return $this->_attr($key);
+			}
+			elseif ($this->hasRelative($key)) {
+				return $this->_relative($key);
+			}
+		}
+		else {
+			if ($this->hasAttr($key)) {
+				return $this->_attr($key, $val);
+			}
+			elseif ($this->hasRelative($key)) {
+				return $this->_relative($key, $val);
+			}
+		}
 	}
 
 	/**
-	 * I return an attribute value. Attr value should not be set by app code, so just getter.
+	 * I return original data (as loaded or saved) or a field of it
+	 * @param null $key
+	 * @return array|null
+	 */
+	public function originalField($key=null) {
+		if (func_num_args() == 0) {
+			return $this->_originalData;
+		}
+		elseif ($this->hasAttr($key)) {
+			return isset($this->_originalData[$key])
+				? $this->_originalData[$key]
+				: null;
+		}
+		elseif ($this->hasRelative($key)) {
+			throw new \Exception('TBI');
+		}
+		throw new \Exception($key);
+	}
+
+	public function hasAttr($key) {
+		return $this->_getSchema()->hasAttr($key);
+	}
+
+	protected function _attr($key, $val=null) {
+		if (func_num_args() == 1) {
+			if (array_key_exists($key, $this->_data)) {
+				return $this->_data[$key];
+			}
+			elseif (array_key_exists($key, $this->_originalData)) {
+				return $this->_originalData[$key];
+			}
+			return null;
+		}
+		else {
+			// note that I do not perform apply() here
+			$this->_data[$key] = $val;
+			return $this;
+		}
+		throw new \Exception('TBI');
+	}
+
+	public function hasRelative($key) {
+		return $this->_getSchema()->hasRelative($key);
+	}
+
+	/**
+	 * I return or set relative on field $field
 	 *
 	 * @param $key
-	 * @return mixed|null
+	 * @param $this|mixed $value
 	 */
-	public function attr($key) {
-		if (!$this->hasAttr($key)) {
-			throw new \Exception('attr ' . $key . ' does not exists');
+	public function _relative($key, $val=null) {
+
+		if (count(func_get_args()) == 1) {
+			$ret = null;
+			if (array_key_exists($key, $this->_data)) {
+				$ret = $this->_data[$key];
+				if (is_object($ret) && !($ret instanceof \MongoId));
+				else {
+					$Rel = $this->_getSchema()->field($key);
+					$ret = $Rel->getReferredObject($this->_data[$key]);
+					$this->_data[$key] = $ret;
+				}
+			}
 		}
-		return isset($this->_attrData[$key]) ? $this->_attrData[$key] : null;
+		else {
+			throw new \Exception('TBI');
+		}
+		return $ret;
 	}
 
 	/**
 	 * I return or set a property
 	 *
 	 * @param $key
-	 * @param null $value
+	 * @param null $val
 	 * @return mixed|null
 	 * @throws \Exception
 	 */
-	public function prop($key, $value=null) {
-		if (!$this->hasAttr($key)) {
-			throw new \Exception(echon($key) . ' / ' . echon($value));
+	public function prop($key, $val=null) {
+		if (!$this->hasField($key)) {
+			throw new \Exception(echon($key) . ' / ' . echon($val));
 		}
 		elseif (count(func_get_args()) == 1) {
-			return array_key_exists($key, $this->_propData)
-				? $this->_propData[$key]
-				: null;
+			if (array_key_exists($key, $this->_data)) {
+				return $this->_data[$key];
+			}
+			elseif (array_key_exists($key, $this->_originalData)) {
+				return $this->_originalData[$key];
+			}
+			else {
+				return null;
+			}
 		}
 		else {
-			return $this->_apply($key, $value);
+			return $this->_apply($key, $val);
 		}
 	}
 
@@ -213,62 +426,34 @@ abstract class Model implements \IteratorAggregate {
 			throw new \Exception(echon($data));
 		}
 		elseif($overwrite) {
-			$this->_attrData = $data;
-			$this->_propData = $data;
+			$this->_originalData = $data;
+			$this->_data = array();
 		}
 		else {
-			throw new \Exception('TBI');
+			foreach ($data as $eachKey=>$eachVal) {
+				$this->field($eachKey, $eachVal);
+			}
 		}
 		return $this;
 	}
 
-	protected function _apply($key, $value) {
-		$wasNull = is_null($value);
-		$Attr = \SchemaManager::getSchema($this)->attr($key);
-		$value = $Attr->apply($value);
-		if (is_null($value) && !$wasNull) {
+	protected function _apply($key, $val) {
+		$wasNull = is_null($val);
+		$Attr = $this->_getSchema()->field($key);
+		$val = $Attr->apply($val);
+		if (is_null($val) && !$wasNull) {
 			return null;
 		}
-		$this->_propData[$key] = $value;
+		$this->_data[$key] = $val;
 		$this->_isValidated[false] = false;
 		$this->_isValidated[true] = false;
 		$this->_isValidated[$key] = false;
-		return $value;
+		return $val;
 	}
 
-	/**
-	 * I return if I have relative referenced by $attr field
-	 * @param string $attr
-	 * @return bool
-	 */
-	public function hasRelative($attr) {
-		return \SchemaManager::getSchema($this)->hasRelative($attr);
-	}
-
-	/**
-	 * I return or set relative on field $attr
-	 * @param $attr
-	 * @param $this|mixed $value
-	 */
-	public function relative($attr, $value=null) {
-
-		if (count(func_get_args()) == 1) {
-			 $ret = null;
-			if (array_key_exists($attr, $this->_propData)) {
-				$ret = $this->_propData[$attr];
-				if (is_object($ret) && !($ret instanceof \MongoId));
-				else {
-					$Rel = \SchemaManager::getSchema($this)->attr($attr);
-					$ret = $Rel->getReferredObject($this->_propData[$attr]);
-					$this->_propData[$attr] = $ret;
-				}
-			}
-		}
-		else {
-			throw new \Exception('TBI'); ;
-		}
-		return $ret;
-	}
+	////////////////////////////////////////////////////////////////////////////////
+	// validation
+	////////////////////////////////////////////////////////////////////////////////
 
 	/**
 	 * @todo make it cached by $this->_isValid again!?
@@ -280,55 +465,61 @@ abstract class Model implements \IteratorAggregate {
 		return empty($errors);
 	}
 
+	/**
+	 * @param bool|string|string[] $key
+	 * 	true   - validate all values in model context
+	 *  false  - validate all values formally
+	 *  string - validate one field formally
+	 *  string[] - validate some fields in model context
+	 * @return bool
+	 * @throws \Exception
+	 */
 	public function validate($key=true) {
-		$_key = $key;
 		switch(true) {
 			case $key === true:
+			case $key === false:
 				$this->_isValidated = array(true=>false, false=>false);
 				$this->_validationErrors = array();
-				$Schema = \SchemaManager::getSchema($this);
-				foreach ($Schema as $eachKey=>$eachEl) {
-//					echop('validating: ' . $eachKey);
+				$Schema = $this->_getSchema();
+				foreach ($Schema as $eachKey=>$EachField) {
+					if (!$key && !array_key_exists($eachKey, $this->_data)) {
+						continue;
+					}
 					$eachVal = $this->$eachKey;
-//					echop($eachVal);
-					$errors = $eachEl->getErrors($eachVal);
+					$errors = $EachField->getErrors($eachVal, $key ? $this : null);
 					if (!empty($errors)) {
 						$this->_validationErrors[$eachKey] = $errors;
 					}
-					$this->_isValidated[$eachKey] = true;
+					$this->_isValidated[$eachKey] = $key;
 				}
-				$this->_isValidated[true] = true;
+				$this->_isValidated[true] = $key;
 				$this->_isValidated[false] = true;
 				return empty($this->_validationErrors);
 				break;
-			case $key === false:
-				$key = array_keys($this->_propData);
-				$this->_isValidated[false] = false;
-				// fallthrough
 			case is_array($key):
 				foreach ($key as $eachKey) {
 					unset($this->_validationErrors[$eachKey]);
+					unset($this->_isValidated[$eachKey]);
 					$eachVal = $this->$eachKey;
-					$errors = \SchemaManager::getSchema($this)->$eachKey->getErrors($eachVal);
+					$errors = $this->_getSchema()->field($eachKey)->getErrors($eachVal);
 					if (!empty($errors)) {
 						$this->_validationErrors[$eachKey] = $errors;
 					}
 					$this->_isValidated[$eachKey] = true;
 				}
-				if ($_key === false) {
-					$this->_isValidated[false] = true;
+				$errors = array_intersect_key($this->_validationErrors, array_flip($key));
+				$ret = empty($errors);
+				// this actually shouldn't make sense as [true] and [false] shall be unset upon prop setting
+				if ($ret) {
+					unset($this->_isValidated[true]);
+					unset($this->_isValidated[false]);
 				}
-				if ($key == array_keys(\SchemaManager::getSchema($this)->attrs())) {
-					$this->_isValidated[true] = true;
-				}
-				$errors = array_intersect_key($this->_validationErrors, $key);
-				return empty($errors);
 				break;
-			case $this->hasAttr($key):
+			case $this->hasField($key):
 			case $this->hasRelative($key):
 				unset($this->_validationErrors[$key]);
 				$val = $this->$key;
-				$errors = \SchemaManager::getSchema($this)->$key->getErrors($val);
+				$errors = $this->_getSchema()->$key->getErrors($val);
 				if (!empty($errors)) {
 					$this->_validationErrors[$key] = $errors;
 				};
@@ -341,15 +532,12 @@ abstract class Model implements \IteratorAggregate {
 	public function getErrors($key=true) {
 		switch(true) {
 			case $key === true:
-				if (!$this->_isValidated[true]) {
-					$this->validate(true);
+			case $key === false:
+				if (!$this->_isValidated[$key]) {
+					$this->validate($key);
 				}
 				return $this->_validationErrors;
-			case $key === false:
-				$key = array_keys($this->_propData);
-				// fallthrough
 			case is_array($key):
-				$needValidation = false;
 				if ($this->_isValidated[true]);
 				else {
 					foreach ($key as $eachKey) {
@@ -359,8 +547,8 @@ abstract class Model implements \IteratorAggregate {
 						}
 					}
 				}
-				return array_intersect_key($this->_validationErrors, $key);
-			case $this->hasAttr($key):
+				return array_intersect_key($this->_validationErrors, array_flip($key));
+			case $this->hasField($key):
 			case $this->hasRelative($key):
 				if (!isset($this->_isValidated[$key]) || !$this->_isValidated[$key]) {
 					$this->validate($key);

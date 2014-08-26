@@ -5,10 +5,10 @@ namespace Maui;
 class SchemaValidatorMin extends \SchemaValidator {
 
 	public function validate($val, $Model=null) {
-		if (!is_scalar($val)) {
-			return false;
+		if (is_scalar($val)) {
+			return (int)$val >= $this->_value;
 		}
-		return (int)$val >= $this->_value;
+		return null;
 	}
 
 	public function getError($val, $Model=null) {

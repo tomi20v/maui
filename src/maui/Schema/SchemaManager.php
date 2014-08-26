@@ -120,8 +120,8 @@ class SchemaManager extends \Schema {
 		$ret = new \Schema();
 		foreach ($schema as $eachKey=>$eachVal) {
 			// 'field' => 'Classname' reference
-			if (is_string($eachKey) && \SchemaObject::isSchemaObject($eachVal)) {
-				$ret->_schema[$eachKey] = \SchemaObject::from($eachVal, $context, $eachKey);
+			if (is_string($eachKey) && \SchemaRelative::isSchemaObject($eachVal)) {
+				$ret->_schema[$eachKey] = \SchemaRelative::from($eachVal, $context, $eachKey);
 			}
 			// 'field' (just value, without key)
 			elseif (is_numeric($eachKey) && is_string($eachVal)) {

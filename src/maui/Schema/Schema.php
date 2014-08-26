@@ -4,8 +4,6 @@ namespace Maui;
 
 class Schema implements \IteratorAggregate {
 
-//	use \Maui\TraitIterable;
-
 	protected $_schema = array();
 
 	public function __get($key) {
@@ -21,24 +19,29 @@ class Schema implements \IteratorAggregate {
 		return new \ArrayIterator($this->_schema);
 	}
 
+	public function fields() {
+		return array_keys($this->_schema);
+	}
+
+	public function hasField($key) {
+		return isset($this->_schema[$key]);
+	}
+
+	/**
+	 * I return SchemaAttr or SchemaRelative object on $key
+	 * @param $key
+	 * @return \SchemaAttr
+	 */
+	public function field($key) {
+		return $this->_schema[$key];
+	}
+
 	public function hasAttr($key) {
 		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaAttr);
 	}
 
 	public function hasRelative($key) {
-		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaObject);
-	}
-
-	public function attrs() {
-		return array_keys($this->_schema);
-	}
-
-	/**
-	 * @param $key
-	 * @return \SchemaAttr
-	 */
-	public function attr($key) {
-		return $this->_schema[$key];
+		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaRelative);
 	}
 
 	/**
