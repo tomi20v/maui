@@ -14,7 +14,12 @@ class Collection {
 
 	protected $_filters = array();
 
-	public static function getCollectionName() {
+	/**
+	 * I return name of collection in DB
+	 * @return string
+	 * @extendMe - reuse another DB collection by returning its name from here
+	 */
+	public static function getDbCollectionName() {
 		$collectionName = get_called_class();
 		if ($pos = strrpos($collectionName, '\\')) {
 			$collectionName = substr($collectionName, $pos+1);
@@ -23,19 +28,68 @@ class Collection {
 	}
 
 	public function __construct($data=null) {
+		if (!is_null($data)) {
+			$this->apply($data, true);
+		}
+	}
 
+	protected function _getDbCollection() {
+		$collectionName = static::getDbCollectionName();
+		return \Maui::instance()->dbDb()->$collectionName;
+	}
+
+	/**
+	 * I apply data from array. Can be array of data from DB or array of models
+	 * @param array[]|\Model[] $data
+	 * @param bool $replace - send true to replace current data (also faster). Otherwise $data is merged
+	 * @return $this
+	 * @throws \Exception
+	 */
+	public function apply($data, $replace=true) {
+		if (!is_array($data)) {
+			throw new \Exception(echon($data));
+		}
+		if ($replace) {
+			$this->_data = $data;
+		}
+		else {
+			die('fixme');
+			//$this->_data = $this->_data + $data;
+		}
+		return $this;
 	}
 
 	public function clear() {
 		throw new \Exception('TBI');
 	}
 
-	public function add($ModelOrModels) {
-		throw new \Exception('TBI');
+	/**
+	 * add one or more models, by data, by model, or by collection
+	 *
+*@param $data
+	 * @return $this
+	 * @throws \Exception
+	 */
+	public function add($data) {
+		// @todo support adding collections as well
+		if ($data instanceof \Model) {
+			$data = array($data);
+		}
+		elseif ($data instanceof \Collection) {
+			throw new \Exception('TBI');
+		}
+		if (!is_array($data)) {
+			throw new \Exception(echon($data));
+		}
+		return $this->apply($data, false);
 	}
 
 	public function remove($ModelOrModels) {
 		throw new \Exception('TBI');
+	}
+
+	public function contains($ModelOrData) {
+
 	}
 
 	public function save() {
@@ -50,7 +104,7 @@ class Collection {
 		throw new \Exception('TBI');
 	}
 
-	public function loadByFilters() {
+	public function loadByFilters($skip=0, $limit=0) {
 		$DbCollection = $this->_getDbCollection();
 		$filterData = $this->_filters;
 		if (empty($filterData)) {
@@ -64,12 +118,15 @@ class Collection {
 				'$or' => $filterData,
 			);
 		}
-//		echop($filterData); die;
 		$cursor = $DbCollection->find($filterData);
-		echop('count: ' . $cursor->count());
-		echop($cursor);
-		die('HOKI');
-		throw new \Exception('TBI');
+		if ($skip) {
+			$cursor->skip($skip);
+		}
+		if ($limit) {
+			$cursor->limit($limit);
+		}
+		$this->_data = iterator_to_array($cursor);
+		return $this;
 	}
 
 	public function filter($modeOrFilter) {
@@ -83,11 +140,6 @@ class Collection {
 		elseif ($modeOrFilter instanceof \Model) {
 			throw new \Exception('TBI');
 		}
-	}
-
-	protected function _getDbCollection() {
-		$collectionName = static::getCollectionName();
-		return \Maui::instance()->dbDb()->$collectionName;
 	}
 
 }

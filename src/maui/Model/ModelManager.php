@@ -38,4 +38,65 @@ class ModelManager extends \Model {
 		self::$_modelData[$classname] = array();
 	}
 
+	/**
+	 * I compare two objects or similar data. If one argument is only a string, then I match only the ID. Otherwise,
+	 * 		I check if $m1 matches $m2 (so $m2 might have extra data, but contains all of $m1). Input types:
+	 *  string - treated as ID
+	 *  array - treated as is
+	 *  \Model - its data is retrieved by getData(false)
+	 * @param mixed $m1
+	 * @param mixed $m2
+	 * @return bool|null
+	 */
+	public static function compare($m1, $m2, $strict=false) {
+		// if one of them string ID, then compare by just ID
+		if (is_string($m1) || is_string($m2)) {
+			// if $m2 is the string, swap them
+			if (!is_string($m1)) {
+				$tmp = $m1;
+				$m1 = $m2;
+				$m2 = $tmp;
+			}
+			if (is_string($m2));
+			elseif (is_array($m2)) {
+				$m2 = isset($m2['_id']) ? $m2['_id'] : null;
+			}
+			elseif ($m2 instanceof \Model) {
+				$m2 = $m2->_id;
+			}
+			else return null;
+			return $m1 == $m2;
+		}
+		else {
+			if (is_array($m1));
+			elseif ($m1 instanceof \Model) {
+				$m1 = $m1->getData(false);
+			}
+			else return null;
+			if (is_array($m2));
+			elseif ($m2 instanceof \Model) {
+				$m2 = $m2->getData(false);
+			}
+			else return null;
+			foreach ($m1 as $eachKey=>$eachVal1) {
+				if (!isset($m2[$eachKey])) {
+					return false;
+				}
+				$eachVal2 = $m2[$eachKey];
+				if (is_array($eachVal1) || is_object($eachVal1) || is_array($eachVal2) || is_object($eachVal2)) {
+					if (!static::compare($eachVal1, $eachVal2, $strict)) {
+						return false;
+					}
+				}
+				else {
+					if (($strict && ($eachVal1 !== $eachVal2)) ||
+						(!$strict && ($eachVal1 != $eachVal2))) {
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+	}
+
 }
