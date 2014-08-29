@@ -2,8 +2,12 @@
 
 namespace Maui;
 
-class Collection {
+class Collection implements \Arrayaccess, \Iterator {
 
+	/**
+	 * @var null
+	 * @extendMe
+	 */
 	protected $_modelClassname;
 
 	/**
@@ -12,6 +16,9 @@ class Collection {
 	 */
 	protected $_data = array();
 
+	/**
+	 * @var array a simple and dumb array of filters, applicable for mongoDB
+	 */
 	protected $_filters = array();
 
 	/**
@@ -27,21 +34,46 @@ class Collection {
 		return $collectionName;
 	}
 
-	public function __construct($data=null) {
+	public function __construct($data=null, $modelClassname=null) {
+		if (!is_null($modelClassname)) {
+			$this->_modelClassname = $modelClassname;
+		}
 		if (!is_null($data)) {
 			$this->apply($data, true);
 		}
 	}
 
+	/**
+	 * I return the actual DB collection to use
+	 * @return \MongoCollection
+	 */
 	protected function _getDbCollection() {
 		$collectionName = static::getDbCollectionName();
 		return \Maui::instance()->dbDb()->$collectionName;
 	}
 
 	/**
+	 * I return proper model classname. To override, define $_modelClassname in class definition or override this method
+	 * @return null|string
+	 * @extendMe
+	 */
+	protected function _getModelClassname() {
+		if (empty($this->_modelClassname)) {
+			if (preg_match('/^(.+)Collection$/', get_class($this), $matches)) {
+				$this->_modelClassname = $matches[1];
+				if ($pos = strrpos($this->_modelClassname, '\\')) {
+					$this->_modelClassname = substr($this->_modelClassname, $pos+1);
+				}
+			}
+		}
+		return $this->_modelClassname;
+	}
+
+	/**
 	 * I apply data from array. Can be array of data from DB or array of models
 	 * @param array[]|\Model[] $data
-	 * @param bool $replace - send true to replace current data (also faster). Otherwise $data is merged
+	 * @param bool $replace - send true to replace current data (also faster). Otherwise $data is merged. Send null
+	 * 		to disable duplicate checking
 	 * @return $this
 	 * @throws \Exception
 	 */
@@ -53,8 +85,9 @@ class Collection {
 			$this->_data = $data;
 		}
 		else {
-			die('fixme');
-			//$this->_data = $this->_data + $data;
+			foreach ($data as $eachData) {
+				$this->add($eachData);
+			}
 		}
 		return $this;
 	}
@@ -70,26 +103,32 @@ class Collection {
 	 * @return $this
 	 * @throws \Exception
 	 */
-	public function add($data) {
+	public function add($data, $checkDuplicates=true) {
 		// @todo support adding collections as well
-		if ($data instanceof \Model) {
-			$data = array($data);
+		if (is_array($data) || ($data instanceof \Model));
+		else {
+			throw new \Exception(echon($data) . ' / ' . echon($checkDuplicates));
 		}
-		elseif ($data instanceof \Collection) {
-			throw new \Exception('TBI');
+		if ($checkDuplicates && $this->contains($data));
+		else {
+			$this->_data[] = $data;
 		}
-		if (!is_array($data)) {
-			throw new \Exception(echon($data));
-		}
-		return $this->apply($data, false);
+		return $this;
 	}
 
 	public function remove($ModelOrModels) {
 		throw new \Exception('TBI');
 	}
 
+	/**
+	 * @param $ModelOrData
+	 * @return bool
+	 * @todo FIXME
+	 */
 	public function contains($ModelOrData) {
-
+		// @todo FIXME
+		echop('TODO: implement Collection::contains()');
+		return true;
 	}
 
 	public function save() {
@@ -140,6 +179,87 @@ class Collection {
 		elseif ($modeOrFilter instanceof \Model) {
 			throw new \Exception('TBI');
 		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	// data
+	////////////////////////////////////////////////////////////////////////////////
+
+	public function at($key) {
+		if ($key instanceof \MongoId) {
+			$key = $key->id;
+		}
+		if (!is_scalar($key)) {
+			throw new \Exception();
+		}
+		if (isset($this->_data[$key])) {
+			$data = $this->_data[$key];
+			$classname = $this->_getModelClassname();
+			$this->_data[$key] = new $classname($data, true);
+			return $this->_data[$key];
+		}
+		else return null;
+	}
+
+	/**
+	 * I return data of all members
+	 * @param bool $allOrChanged just to pass by to children
+	 * @return array
+	 */
+	public function getData($allOrChanged = true) {
+		$data = array();
+		foreach ($this->_data as $eachKey=>$eachVal) {
+			$data[$eachKey] = $eachVal instanceof \Model
+				? $eachVal->getData($allOrChanged)
+				: $eachVal;
+		}
+		return $data;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	// arrayaccess
+	////////////////////////////////////////////////////////////////////////////////
+
+	public function offsetExists($key) {
+		return array_key_exists($key, $this->_data);
+	}
+
+	public function offsetGet($key) {
+		return $this->at($key);
+	}
+
+	public function offsetSet($key, $val) {
+		return $this->at($key, $val);
+	}
+
+	public function offsetUnset($key) {
+		unset($this->_data[$key]);
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	// iterator
+	////////////////////////////////////////////////////////////////////////////////
+
+	public function current() {
+		$key = key($this->_data);
+		return $key === false ? null : $this->at($key);
+	}
+
+	public function key() {
+		return key($this->_data);
+	}
+
+	public function next() {
+		next($this->_data);
+		return $this->current();
+	}
+
+	public function rewind() {
+		reset($this->_data);
+	}
+
+	public function valid() {
+		return key($this->_data) !== false;
 	}
 
 }

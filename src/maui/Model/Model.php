@@ -107,7 +107,7 @@ abstract class Model implements \IteratorAggregate {
 
 	protected function _getDbCollection() {
 		$collectionClassname = $this->getCollectionClassName();
-		$collectionName = $collectionClassname::getCollectionName();
+		$collectionName = $collectionClassname::getDbCollectionName();
 		return \Maui::instance()->dbDb()->$collectionName;
 	}
 
@@ -118,8 +118,14 @@ abstract class Model implements \IteratorAggregate {
 	 * @extendMe eg. in case reusing a collection class for multiple models
 	 */
 	public static function getCollection($data=null) {
-		$classname = static::getCollectionClassName();
-		return new $classname($data);
+		$collectionClassname = static::getCollectionClassName();
+		if (class_exists($collectionClassname)) {
+			$ret = new $collectionClassname($data);
+		}
+		else {
+			$ret = new \Collection($data, get_called_class());
+		}
+		return $ret;
 	}
 
 	/**
@@ -186,6 +192,7 @@ abstract class Model implements \IteratorAggregate {
 				);
 				if (isset($result['ok']) && $result['ok']) {
 					$this->_originalData = $data;
+					// @todo save already created relative objects here
 					$this->_data = array();
 				}
 			}
@@ -374,9 +381,11 @@ abstract class Model implements \IteratorAggregate {
 	 * @param $this|mixed $value
 	 */
 	public function _relative($key, $val=null) {
-
+		$ret = null;
 		if (count(func_get_args()) == 1) {
-			$ret = null;
+			if (!array_key_exists($key, $this->_data) && array_key_exists($key, $this->_originalData)) {
+				$this->_data[$key] = $this->_originalData[$key];
+			}
 			if (array_key_exists($key, $this->_data)) {
 				$ret = $this->_data[$key];
 				if (is_object($ret) && !($ret instanceof \MongoId));
@@ -388,7 +397,24 @@ abstract class Model implements \IteratorAggregate {
 			}
 		}
 		else {
-			throw new \Exception('TBI');
+			if ($val instanceof \MongoId);
+			elseif ($val instanceof \Model) {
+				$Rel = $this->_getSchema()->field($key);
+				$classname = $Rel->getObjectClassname();
+				if (!$val instanceof $classname) {
+					throw new \Exception(echon($key) . ' / ' . echon($val));
+				}
+			}
+			elseif ($val instanceof \Collection) {
+				$Rel = $this->_getSchema()->field($key);
+				$classname = $Rel->getObjectClassname();
+				$collectionClassname = $classname::getCollectionName();
+				if (!$val instanceof $collectionClassname) {
+					throw new \Exception(echon($key) . ' / ' . echon($val));
+				}
+			}
+			$this->_data[$key] = $val;
+			$ret = $this;
 		}
 		return $ret;
 	}

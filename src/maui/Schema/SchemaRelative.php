@@ -169,7 +169,29 @@ class SchemaRelative {
 	 */
 	public function getReferredObject($val) {
 		$classname = $this->_class;
-		$ret = new $classname(array($this->_referredField => $val));
+
+		// collection
+		if ($this->_hasMax && ($this->_hasMax > 1)) {
+			$data = array();
+			foreach ($val as $eachVal) {
+				if ($eachVal instanceof \MongoId) {
+					$eachVal = array('_id' => $eachVal);
+				}
+				elseif ($this->_reference == \SchemaManager::REF_REFERENCE) {
+					$eachVal = array($this->_referredField => $eachVal);
+				}
+				elseif ($this->_reference == \SchemaManager::REF_INLINE);
+				else {
+					throw new \Exception(echon($eachVal));
+				}
+				$data[] = $eachVal;
+			}
+			$ret = $classname::getCollection($val);
+		}
+		// single object
+		else {
+			$ret = new $classname(array($this->_referredField => $val), true);
+		}
 		return $ret;
 	}
 
@@ -189,6 +211,14 @@ class SchemaRelative {
 			default:
 				throw new \Exception('TBI');
 		};
+	}
+
+	/**
+	 * I return referred object classname
+	 * @return string
+	 */
+	public function getObjectClassname() {
+		return $this->_class;
 	}
 
 }
