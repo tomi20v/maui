@@ -119,6 +119,8 @@ class SchemaRelative {
 					case 'relation':
 						$SchemaObject->_relation = $eachVal;
 						break;
+					// @todo I should implement a lightweight model class with variable schemas to support these sub-schemas
+					//		these would be used when a real class cannot be found
 					case 'schema':
 						// I shall be able to create a schema even if $key is null, eg. for ad-hoc schemas. be careful
 						//		and feed $context otherwise schemas can overwrite previous ones

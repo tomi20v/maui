@@ -48,18 +48,13 @@ abstract class Model implements \IteratorAggregate {
 		}
 		if (is_array($idOrData)) {
 			$this->apply($idOrData, $dataIsOriginal);
-//			$this->data($idOrData, $dataIsOriginal);
 		}
-//		elseif (is_object($idOrData) && $idOrData instanceof \Model) {
-//			$this->apply($idOrData);
-//		}
 		elseif (is_object($idOrData) && $idOrData instanceof \MongoId) {
 			$this->_id = $idOrData;
 		}
 		elseif (is_string($idOrData)) {
 			$this->_id = new \MongoId($idOrData);
 		}
-		// @todo register the model here if already has ID. also write setID() which registers the object
 	}
 
 	public function __get($key) {
@@ -286,10 +281,13 @@ abstract class Model implements \IteratorAggregate {
 				}
 				// if a relative, get its data through the relation object
 				elseif ($this->hasRelative($eachKey)) {
-					if (is_object($eachVal) && !($eachVal instanceof \MongoId)) {
-						$eachVal = $EachField->getObjectData($eachVal);
+					if (is_array($eachVal) && empty($eachVal['_id'])) {
+						$data[$eachKey] = $eachVal;
 					}
-					$data[$eachKey] = $eachVal;
+					elseif (is_object($eachVal) && empty($eachVal->_id)) {
+						$data[$eachKey] = $eachVal->data($allOrChanged);
+					}
+
 				}
 			}
 		}
@@ -306,6 +304,14 @@ abstract class Model implements \IteratorAggregate {
 		return $this->_getSchema()->hasField($key);
 	}
 
+	/**
+	 * I set or get a field. Indeed I just wrap attr() and relative() methods
+	 * @param $key field name to set or get
+	 * @param null $val if present, field will be set, otherwise just returned
+	 * @return $this|Model|null I return $this on set, or mixed for get. Note:
+	 * 	field($key) returns actual data, with fallback to return original data
+	 * @throws \Exception
+	 */
 	public function field($key, $val=null) {
 		if (!$this->hasField($key)) {
 			throw new \Exception('field ' . $key . ' does not exists');
@@ -348,10 +354,22 @@ abstract class Model implements \IteratorAggregate {
 		throw new \Exception($key);
 	}
 
+	/**
+	 * I return if I have an attribute called $key
+	 * @param $key
+	 * @return bool
+	 */
 	public function hasAttr($key) {
 		return $this->_getSchema()->hasAttr($key);
 	}
 
+	/**
+	 * I return or set value on field $key
+	 * @param $key
+	 * @param null $val
+	 * @return $this|null
+	 * @throws \Exception
+	 */
 	protected function _attr($key, $val=null) {
 		if (func_num_args() == 1) {
 			if (array_key_exists($key, $this->_data)) {
@@ -370,6 +388,11 @@ abstract class Model implements \IteratorAggregate {
 		throw new \Exception('TBI');
 	}
 
+	/**
+	 * I return if I have relative(s) called $key
+	 * @param $key
+	 * @return bool
+	 */
 	public function hasRelative($key) {
 		return $this->_getSchema()->hasRelative($key);
 	}
@@ -397,8 +420,7 @@ abstract class Model implements \IteratorAggregate {
 			}
 		}
 		else {
-			if ($val instanceof \MongoId);
-			elseif ($val instanceof \Model) {
+			if ($val instanceof \Model) {
 				$Rel = $this->_getSchema()->field($key);
 				$classname = $Rel->getObjectClassname();
 				if (!$val instanceof $classname) {
@@ -420,33 +442,13 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * I return or set a property
-	 *
-	 * @param $key
-	 * @param null $val
-	 * @return mixed|null
+	 * I set or merge data
+	 * @param miced[] $data data to use
+	 * @param bool $overwrite if true, I set originalData. Otherwise, I add $data to
+	 * 		current $_data. NOTE collections are overwritten this way (maybe fix this?)
+	 * @return $this
 	 * @throws \Exception
 	 */
-	public function prop($key, $val=null) {
-		if (!$this->hasField($key)) {
-			throw new \Exception(echon($key) . ' / ' . echon($val));
-		}
-		elseif (count(func_get_args()) == 1) {
-			if (array_key_exists($key, $this->_data)) {
-				return $this->_data[$key];
-			}
-			elseif (array_key_exists($key, $this->_originalData)) {
-				return $this->_originalData[$key];
-			}
-			else {
-				return null;
-			}
-		}
-		else {
-			return $this->_apply($key, $val);
-		}
-	}
-
 	public function apply($data, $overwrite=false) {
 		if (!is_array($data)) {
 			throw new \Exception(echon($data));
@@ -461,20 +463,6 @@ abstract class Model implements \IteratorAggregate {
 			}
 		}
 		return $this;
-	}
-
-	protected function _apply($key, $val) {
-		$wasNull = is_null($val);
-		$Attr = $this->_getSchema()->field($key);
-		$val = $Attr->apply($val);
-		if (is_null($val) && !$wasNull) {
-			return null;
-		}
-		$this->_data[$key] = $val;
-		$this->_isValidated[false] = false;
-		$this->_isValidated[true] = false;
-		$this->_isValidated[$key] = false;
-		return $val;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

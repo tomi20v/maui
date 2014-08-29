@@ -43,8 +43,7 @@ class Video extends \Model {
 			'label' => 'Cast',
 			'class' => 'Staff',
 			'reference' => \SchemaManager::REF_INLINE,
-//			'relation' => \Schema::REL_CANHAVESOME,
-			'hasMin' => 1,
+			'hasMin' => 0,
 			'hasMax' => 5,
 			'schema' => array(
 				'name',

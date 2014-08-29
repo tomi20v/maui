@@ -2,6 +2,16 @@
 
 namespace Maui;
 
+/**
+ * Class Collection
+ *
+ * @package Maui
+ * anomalies (bugs!?)
+ * 	- created relative objects will have to be re-created after a save(). This does not make safe keeping a reference
+ * 		of the relative object (or has to be refreshed after save). Currently marked as low value improvement
+ *  - possibly solved by above: getting a relative, if it is constructed, triggers a save no matter if the any of the
+ * 		child or parent object has changed
+ */
 class Collection implements \Arrayaccess, \Iterator {
 
 	/**
@@ -40,6 +50,18 @@ class Collection implements \Arrayaccess, \Iterator {
 		}
 		if (!is_null($data)) {
 			$this->apply($data, true);
+		}
+	}
+
+	/**
+	 * @param $key
+	 * @return null
+	 */
+	public function __get($key) {
+		switch ($key) {
+			// provide ->_id property for compatibility with model
+			case '_id':
+				return null;
 		}
 	}
 
@@ -242,7 +264,7 @@ class Collection implements \Arrayaccess, \Iterator {
 
 	public function current() {
 		$key = key($this->_data);
-		return $key === false ? null : $this->at($key);
+		return $key === null ? null : $this->at($key);
 	}
 
 	public function key() {
@@ -259,7 +281,7 @@ class Collection implements \Arrayaccess, \Iterator {
 	}
 
 	public function valid() {
-		return key($this->_data) !== false;
+		return key($this->_data) !== null;
 	}
 
 }

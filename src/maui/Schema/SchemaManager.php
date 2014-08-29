@@ -98,6 +98,13 @@ class SchemaManager extends \Schema {
 		return $schema;
 	}
 
+	/**
+	 * I construct a $Schema object
+	 * @param $schema data to use
+	 * @param $context the "name" of the class or pseudo-class for which schema stands
+	 * @return \Schema
+	 * @throws \Exception
+	 */
 	public static function from($schema, $context) {
 		if ($schema instanceof \Schema) {
 			return $schema;
@@ -105,7 +112,6 @@ class SchemaManager extends \Schema {
 		elseif (is_array($schema)) {
 			return static::_fromArray($schema, $context);
 		}
-		echop($schema); debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 		throw new \Exception('cannot create schema from unknown format');
 	}
 
@@ -141,7 +147,7 @@ class SchemaManager extends \Schema {
 	 * I add _id field definition to $Schema if it doesn't have it
 	 * @param $schema
 	 */
-	static function ensureHasId($schema) {
+	public static function ensureHasId($schema) {
 		if (!array_key_exists('_id', $schema)) {
 			$schema = array_reverse($schema);
 			$schema['_id'] = static::_getIdDef_();
@@ -158,7 +164,6 @@ class SchemaManager extends \Schema {
 		return array(
 			'label' => 'ID',
 			'toId',
-//			'unique',
 		);
 	}
 
