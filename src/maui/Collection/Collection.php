@@ -12,7 +12,7 @@ namespace Maui;
  *  - possibly solved by above: getting a relative, if it is constructed, triggers a save no matter if the any of the
  * 		child or parent object has changed
  */
-class Collection implements \Arrayaccess, \Iterator {
+class Collection implements \Arrayaccess, \Iterator, \Countable {
 
 	/**
 	 * @var null
@@ -143,14 +143,21 @@ class Collection implements \Arrayaccess, \Iterator {
 	}
 
 	/**
+	 * I check if submitted model or data matches a model or data in me. Match means
+	 * 		that my data contains all keys and same values as $ModelOrData.
 	 * @param $ModelOrData
 	 * @return bool
-	 * @todo FIXME
 	 */
 	public function contains($ModelOrData) {
-		// @todo FIXME
-		echop('TODO: implement Collection::contains()');
-		return true;
+		$data = $ModelOrData instanceof \Model
+			? $ModelOrData->getData()
+			: $ModelOrData;
+		foreach ($this->_data as $eachModel) {
+			if (\Model::match($eachModel, $data)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public function save() {
@@ -208,16 +215,16 @@ class Collection implements \Arrayaccess, \Iterator {
 	////////////////////////////////////////////////////////////////////////////////
 
 	public function at($key) {
-		if ($key instanceof \MongoId) {
-			$key = $key->id;
-		}
 		if (!is_scalar($key)) {
 			throw new \Exception();
 		}
 		if (isset($this->_data[$key])) {
 			$data = $this->_data[$key];
-			$classname = $this->_getModelClassname();
-			$this->_data[$key] = new $classname($data, true);
+			if (is_array($data)) {
+				$classname = $this->_getModelClassname();
+				$Model = new $classname($data, true);
+				$this->_data[$key] = $Model;
+			}
 			return $this->_data[$key];
 		}
 		else return null;
@@ -278,10 +285,18 @@ class Collection implements \Arrayaccess, \Iterator {
 
 	public function rewind() {
 		reset($this->_data);
+		return $this->current();
 	}
 
 	public function valid() {
 		return key($this->_data) !== null;
 	}
 
+	////////////////////////////////////////////////////////////////////////////////
+	// countable
+	////////////////////////////////////////////////////////////////////////////////
+
+	public function count() {
+		return count($this->_data);
+	}
 }

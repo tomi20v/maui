@@ -232,6 +232,43 @@ abstract class Model implements \IteratorAggregate {
 	////////////////////////////////////////////////////////////////////////////////
 
 	/**
+	 * I match two arrays or objects or one each and check if $modelData contains $data recursively.
+	 * 		Note the check is done by converting both data to array and inspecting each key-val.
+	 * @param $modelData
+	 * @param $data
+	 * @return bool|null
+	 */
+	public static function match($modelData, $data) {
+		if ($modelData instanceof \Model) {
+			$modelData = $modelData->getData();
+		}
+		if ($data instanceof \Model) {
+			$data = $data->getData();
+		}
+		if (!is_array($modelData) || !is_array($data)) {
+			return null;
+		}
+		if (count(array_diff_key($data, $modelData))) {
+			return false;
+		}
+		foreach ($data as $eachKey=>$eachVal) {
+			$modelVal = $modelData[$eachKey];
+			if (is_array($modelVal) || ($modelVal instanceof \Model) ||
+				is_array($eachVal) || ($eachVal instanceof \Model)) {
+				if (!static::match($modelVal, $eachVal)) {
+					return false;
+				}
+			}
+			else {
+				if ($modelVal != $eachVal) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * I wrap data getter methods, see code for examples
 	 *
 	 * @param null|string|array $keyOrData
@@ -265,12 +302,16 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * I return current data representation
 	 * @param bool $allOrChanged if true, all data is returned, if false, just the changed fields plus ID, otherwise nothing...
+	 * @param null|string[] send an array of fieldnames to filter data
 	 * @return array
 	 */
-	public function getData($allOrChanged = true) {
+	public function getData($allOrChanged = true, $returnFields = null) {
 		$data = array();
 		$Schema = $this->_getSchema();
 		foreach($Schema as $eachKey=>$EachField) {
+			if (is_array($returnFields) && isset($returnFields[$eachKey])) {
+				continue;
+			}
 			// if I have this property set
 			if ((($allOrChanged === true) && (array_key_exists($eachKey, $this->_originalData)||array_key_exists($eachKey, $this->_data)) ||
 				(($allOrChanged === false) && array_key_exists($eachKey, $this->_data)))) {
@@ -285,7 +326,7 @@ abstract class Model implements \IteratorAggregate {
 						$data[$eachKey] = $eachVal;
 					}
 					elseif (is_object($eachVal) && empty($eachVal->_id)) {
-						$data[$eachKey] = $eachVal->data($allOrChanged);
+						$data[$eachKey] = $eachVal->getData($allOrChanged);
 					}
 
 				}
