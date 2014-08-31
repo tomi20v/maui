@@ -31,19 +31,6 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	protected $_filters = array();
 
-	/**
-	 * I return name of collection in DB
-	 * @return string
-	 * @extendMe - reuse another DB collection by returning its name from here
-	 */
-	public static function getDbCollectionName() {
-		$collectionName = get_called_class();
-		if ($pos = strrpos($collectionName, '\\')) {
-			$collectionName = substr($collectionName, $pos+1);
-		}
-		return $collectionName;
-	}
-
 	public function __construct($data=null, $modelClassname=null) {
 		if (!is_null($modelClassname)) {
 			$this->_modelClassname = $modelClassname;
@@ -66,11 +53,29 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	}
 
 	/**
+	 * I return name of collection in DB
+	 * @return string
+	 * @extendMe - reuse another DB collection by returning its name from here
+	 */
+	public static function getDbCollectionName($modelClassname=null) {
+		if (!empty($modelClassname)) {
+			$collectionName = call_user_func(array($modelClassname, 'getCollectionClassName'));
+		}
+		else {
+			$collectionName = get_called_class();
+		}
+		if ($pos = strrpos($collectionName, '\\')) {
+			$collectionName = substr($collectionName, $pos+1);
+		}
+		return $collectionName;
+	}
+
+	/**
 	 * I return the actual DB collection to use
 	 * @return \MongoCollection
 	 */
 	protected function _getDbCollection() {
-		$collectionName = static::getDbCollectionName();
+		$collectionName = static::getDbCollectionName($this->_modelClassname);
 		return \Maui::instance()->dbDb()->$collectionName;
 	}
 

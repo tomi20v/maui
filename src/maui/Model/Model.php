@@ -100,10 +100,22 @@ abstract class Model implements \IteratorAggregate {
 	//	CRUD etc
 	////////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * I return the DB collection objection for load save etc
+	 * @return \MongoCollection
+	 */
 	protected function _getDbCollection() {
-		$collectionClassname = $this->getCollectionClassName();
-		$collectionName = $collectionClassname::getDbCollectionName();
-		return \Maui::instance()->dbDb()->$collectionName;
+		// this static implementation will cause a headache when implementing inline models
+		static $_DbCollection;
+		if (is_null($_DbCollection)) {
+			$collectionClassname = $this->getCollectionClassName();
+			if (!class_exists($collectionClassname)) {
+				$collectionClassname = 'Collection';
+			}
+			$dbCollectionName = $collectionClassname::getDbCollectionName(get_class($this));
+			$_DbCollection = \Maui::instance()->dbDb()->$dbCollectionName;
+		}
+		return $_DbCollection;
 	}
 
 	/**

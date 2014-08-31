@@ -12,4 +12,8 @@ class Staff extends \User {
 
 	protected static $_referred = SchemaManager::REF_INLINE;
 
+	protected function _getCollectionName() {
+		return 'UserCollection';
+	}
+
 }

@@ -3,14 +3,14 @@
 class Category extends \Model {
 
 	protected static $_schema = array(
-		'title' => array(
-			'type' => 'string',
+		'label' => array(
+			'toString',
 			'minLength' => 3,
 			'maxLength' => 30,
 		),
 		'description',
-		'timestamp',
-		'createdby',
+//		'timestamp',
+//		'createdby',
 	);
 
 }

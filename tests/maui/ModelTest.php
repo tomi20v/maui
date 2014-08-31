@@ -46,14 +46,14 @@ class ModelTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * @covers Model::originalField($key)
+	 * @covers Model::originalField
 	 */
 	public function testFieldField1() {
 	}
 
 	/**
-	 * @covers Model::originalField($key)
-	 * @covers Model::field($key)
+	 * @covers Model::originalField
+	 * @covers Model::field
 	 * @expectedException Exception
 	 */
 	public function testOriginalFieldAndField1() {
@@ -73,7 +73,7 @@ class ModelTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	/**
-	 * @covers Model::field($key)
+	 * @covers Model::field
 	 */
 	public function testField2() {
 		$User = $this->Video->field('user');
@@ -93,7 +93,6 @@ class ModelTest extends \PHPUnit_Framework_TestCase {
 
 	/**
 	 * @covers Model::_relative
-	 * @covers SchemaRelative::
 	 */
 	public function test_relative() {
 
