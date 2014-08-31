@@ -157,12 +157,13 @@ abstract class Model implements \IteratorAggregate {
 
 	/**
 	 * I load by attributes
+	 * @param bool $loadEmpty if true, I will load even if data to select is empty
 	 * @return $this
 	 */
-	public function load() {
+	public function load($loadEmpty=false) {
 		$Collection = $this->_getDbCollection();
 		$findData = $this->getData(\ModelManager::DATA_ALL);
-		if (empty($findData)) {
+		if (!$loadEmpty && empty($findData)) {
 			return false;
 		}
 		$data = $Collection->findOne($findData);

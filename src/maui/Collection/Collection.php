@@ -177,6 +177,12 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 		throw new \Exception('TBI');
 	}
 
+	/**
+	 * I load objects by preset filters
+	 * @param int $skip
+	 * @param int $limit
+	 * @return $this|null
+	 */
 	public function loadByFilters($skip=0, $limit=0) {
 		$DbCollection = $this->_getDbCollection();
 		$filterData = $this->_filters;
@@ -202,15 +208,20 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 		return $this;
 	}
 
-	public function filter($modeOrFilter) {
-		if (is_null($modeOrFilter)) {
+	/**
+	 * add a filter for loading. Filters are OR'ed so to add an 'AND' expression, pass it in one filter
+	 * @param array|null $filter a mongodb compatible filter array or send null to clear all filters
+	 * @throws \Exception
+	 */
+	public function filter($filter) {
+		if (is_null($filter)) {
 			$this->_filters = array();
 		}
-		elseif (is_array($modeOrFilter)) {
+		elseif (is_array($filter)) {
 			// note I don't even do syntax check. use at own risk
-			$this->_filters[] = $modeOrFilter;
+			$this->_filters[] = $filter;
 		}
-		elseif ($modeOrFilter instanceof \Model) {
+		elseif ($filter instanceof \Model) {
 			throw new \Exception('TBI');
 		}
 	}
