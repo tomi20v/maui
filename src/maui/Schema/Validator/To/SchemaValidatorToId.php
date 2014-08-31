@@ -11,7 +11,7 @@ class SchemaValidatorToId extends \SchemaValidatorTo {
 	 * @return bool
 	 */
 	public function validate($val, $Model=null) {
-		if (($val instanceof \MongoId) && preg_match(static::FORMAT, (string)$val)) {
+		if ((($val instanceof \MongoId) ||is_string($val)) && preg_match(static::FORMAT, (string)$val)) {
 			return true;
 		}
 		return null;

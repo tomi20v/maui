@@ -25,7 +25,7 @@ class SchemaRelative {
 	/**
 	 * @var string current object will refer this field, eg. 'user' => 'Admin' refers to the user who has field 'name' the same
 	 */
-	protected $_referredField = '_id';
+	protected $_referredField = \SchemaManager::ID_KEY;
 
 	/**
 	 * @var \Schema the actual schema data contained in the object. just as the object's
@@ -177,7 +177,7 @@ class SchemaRelative {
 			$data = array();
 			foreach ($val as $eachVal) {
 				if ($eachVal instanceof \MongoId) {
-					$eachVal = array('_id' => $eachVal);
+					$eachVal = array(\SchemaManager::ID_KEY => $eachVal);
 				}
 				elseif ($this->_reference == \SchemaManager::REF_REFERENCE) {
 					$eachVal = array($this->_referredField => $eachVal);

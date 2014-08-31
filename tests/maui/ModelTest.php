@@ -98,4 +98,12 @@ class ModelTest extends \PHPUnit_Framework_TestCase {
 
 	}
 
+	public function testEnsureLoaded() {
+		$Video = new \Video(array('_id'=>new \MongoId('53eeb9b526e34be00595d011')));
+		$this->assertNull($Video->title);
+		$Video->ensureLoaded();
+		$this->assertNotNull($Video->title);
+		echop($Video); die;
+	}
+
 }

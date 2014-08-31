@@ -49,6 +49,11 @@ class SchemaManager extends \Schema {
 	 */
 	const REL_HASSOME = 'hasSome';
 
+	/**
+	 * ID field currently have a constant key
+	 */
+	const ID_KEY = '_id';
+
 
 	/**
 	 * @var \Schema[string] I hold instances of Schema objects keyed by classname
@@ -94,7 +99,6 @@ class SchemaManager extends \Schema {
 		}
 		$schema = static::from($schema, $context);
 		self::$_pool[$context] = $schema;
-//		echo 'registered: ' . $context."\n";
 		return $schema;
 	}
 
@@ -148,10 +152,14 @@ class SchemaManager extends \Schema {
 	 * @param $schema
 	 */
 	public static function ensureHasId($schema) {
-		if (!array_key_exists('_id', $schema)) {
+		if (!array_key_exists(static::ID_KEY, $schema)) {
 			$schema = array_reverse($schema);
-			$schema['_id'] = static::_getIdDef_();
+			$schema[\SchemaManager::ID_KEY] = static::_getIdDef();
 			$schema = array_reverse($schema);
+			// if there's an '_id' defined only by its name, unset it as it would overwrite our new id field...
+			if (($key = array_search(\SchemaManager::ID_KEY, $schema)) !== false) {
+				unset($schema[$key]);
+			}
 		};
 		return $schema;
 	}
@@ -160,7 +168,7 @@ class SchemaManager extends \Schema {
 	 * I return ID field def. you can override it
 	 * @return array
 	 */
-	protected static function _getIdDef_() {
+	protected static function _getIdDef() {
 		return array(
 			'label' => 'ID',
 			'toId',

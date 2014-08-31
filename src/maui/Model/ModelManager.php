@@ -5,6 +5,19 @@ namespace Maui;
 class ModelManager extends \Model {
 
 	/**
+	 * @var int get only original (saved) data
+	 */
+	const DATA_ORIGINAL = 0;
+	/**
+	 * @var int get only changed data
+	 */
+	const DATA_CHANGED = 1;
+	/**
+	 * @var int get all data, prefer locally changed
+	 */
+	const DATA_ALL = 2;
+
+	/**
 	 * @var string[] I hold names of classes which have been inited already
 	 */
 	protected static $_initedClasses=array();
@@ -59,7 +72,7 @@ class ModelManager extends \Model {
 			}
 			if (is_string($m2));
 			elseif (is_array($m2)) {
-				$m2 = isset($m2['_id']) ? $m2['_id'] : null;
+				$m2 = isset($m2[\SchemaManager::ID_KEY]) ? $m2[\SchemaManager::ID_KEY] : null;
 			}
 			elseif ($m2 instanceof \Model) {
 				$m2 = $m2->_id;
@@ -70,12 +83,12 @@ class ModelManager extends \Model {
 		else {
 			if (is_array($m1));
 			elseif ($m1 instanceof \Model) {
-				$m1 = $m1->getData(false);
+				$m1 = $m1->getData(\ModelManager::DATA_ALL);
 			}
 			else return null;
 			if (is_array($m2));
 			elseif ($m2 instanceof \Model) {
-				$m2 = $m2->getData(false);
+				$m2 = $m2->getData(\ModelManager::DATA_ALL);
 			}
 			else return null;
 			foreach ($m1 as $eachKey=>$eachVal1) {

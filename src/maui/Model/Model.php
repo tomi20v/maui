@@ -50,10 +50,21 @@ abstract class Model implements \IteratorAggregate {
 			$this->apply($idOrData, $dataIsOriginal);
 		}
 		elseif (is_object($idOrData) && $idOrData instanceof \MongoId) {
-			$this->_id = $idOrData;
+			if ($dataIsOriginal) {
+				$this->_originalData[\SchemaManager::ID_KEY] = $idOrData;
+			}
+			else {
+				$this->field(\SchemaManager::ID_KEY, $idOrData);
+			}
 		}
 		elseif (is_string($idOrData)) {
-			$this->_id = new \MongoId($idOrData);
+			$id = new \MongoId($idOrData);
+			if ($dataIsOriginal) {
+				$this->_originalData[\SchemaManager::ID_KEY] = $id;
+			}
+			else {
+				$this->field(\SchemaManager::ID_KEY, $id);
+			}
 		}
 	}
 
@@ -145,15 +156,38 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * I load by modified attributes
+	 * I load by attributes
+	 * @return $this
 	 */
 	public function load() {
 		$Collection = $this->_getDbCollection();
-		$data = $Collection->findOne($this->getData(false));
+		$findData = $this->getData(\ModelManager::DATA_ALL);
+		if (empty($findData)) {
+			return false;
+		}
+		$data = $Collection->findOne($findData);
+		// I might not want to overwrite data if not found... to be checked later
 		$data = is_null($data) ? array() : $data;
 		$this->_originalData = $data;
 		$this->_data = array();
 		return $this;
+	}
+
+	/**
+	 * I load _originalData by original data. Won't touch actual data in _data
+	 */
+	public function loadOriginalData() {
+		$Collection = $this->_getDbCollection();
+		$findData = $this->getData(\ModelManager::DATA_ORIGINAL);
+		if (empty($findData)) {
+			return false;
+		}
+		$data = $Collection->findOne($findData);
+		// I might not want to overwrite data if not found... to be checked later
+		$data = is_null($data) ? array() : $data;
+		$this->_originalData = $data;
+		return $this;
+
 	}
 
 	/**
@@ -193,7 +227,7 @@ abstract class Model implements \IteratorAggregate {
 //			}
 			// save only if there is actual data
 			if (!empty($this->_data)) {
-				$data = $this->getData(true);
+				$data = $this->getData(\ModelManager::DATA_ALL);
 				$result = $DbCollection->save(
 					$data
 				);
@@ -212,10 +246,10 @@ abstract class Model implements \IteratorAggregate {
 			if (!$this->validate(false)) {
 				return null;
 			}
-			$data = $this->getData(false);
+			$data = $this->getData(\ModelManager::DATA_CHANGED);
 			if ($this->_id) {
 				$result = $DbCollection->update(
-					array('_id' => $this->_id),
+					array(\SchemaManager::ID_KEY => $this->_id),
 					array('$set' => $data)
 				);
 			}
@@ -252,10 +286,10 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public static function match($modelData, $data) {
 		if ($modelData instanceof \Model) {
-			$modelData = $modelData->getData();
+			$modelData = $modelData->getData(\ModelManager::DATA_ALL);
 		}
 		if ($data instanceof \Model) {
-			$data = $data->getData();
+			$data = $data->getData(\ModelManager::DATA_ALL);
 		}
 		if (!is_array($modelData) || !is_array($data)) {
 			return null;
@@ -284,14 +318,14 @@ abstract class Model implements \IteratorAggregate {
 	 * I wrap data getter methods, see code for examples
 	 *
 	 * @param null|string|array $keyOrData
-	 * @param null|mixed|boolean $valOrDataIsOriginal
+	 * @param null|mixed|boolean $valOrWhichData
 	 * @return array|mixed|null
 	 */
-	public function data($keyOrData=null, $valOrDataIsOriginal=null) {
+	public function data($keyOrData=null, $valOrWhichData=null) {
 	 	$num = func_num_args();
 		// ->data() returns actual data array
-		if (is_null($keyOrData) && is_null($valOrDataIsOriginal)) {
-			return $this->getData();
+		if (is_null($keyOrData) && is_null($valOrWhichData)) {
+			return $this->getData(\ModelManager::DATA_ALL);
 		}
 		// ->data($key) returns value of field on key $key
 		elseif (($num == 1) && is_string($keyOrData)) {
@@ -302,46 +336,54 @@ abstract class Model implements \IteratorAggregate {
 			$this->apply($keyOrData);
 		}
 		// ->data(array(...), true) sets originalData and clears data
-		elseif (($num == 2) && is_array($keyOrData) && ($valOrDataIsOriginal===true)) {
+		elseif (($num == 2) && is_array($keyOrData) && ($valOrWhichData===true)) {
 			$this->apply($keyOrData, true);
 		}
 		// ->data($key, $val) sets field $key to $val (can be field or relative)
 		elseif (($num == 2) && is_string($keyOrData)) {
-			$this->$keyOrData = $valOrDataIsOriginal;
+			$this->$keyOrData = $valOrWhichData;
 		}
 	}
 
 	/**
 	 * I return current data representation
-	 * @param bool $allOrChanged if true, all data is returned, if false, just the changed fields plus ID, otherwise nothing...
+	 *
+	 * @param bool $whichData if true, all data is returned, if false, just the changed fields plus ID, otherwise nothing...
 	 * @param null|string[] send an array of fieldnames to filter data
 	 * @return array
 	 */
-	public function getData($allOrChanged = true, $returnFields = null) {
+	public function getData($whichData, $returnFields = null) {
 		$data = array();
 		$Schema = $this->_getSchema();
 		foreach($Schema as $eachKey=>$EachField) {
-			if (is_array($returnFields) && isset($returnFields[$eachKey])) {
+			if (is_array($returnFields) && !isset($returnFields[$eachKey])) {
 				continue;
 			}
-			// if I have this property set
-			if ((($allOrChanged === true) && (array_key_exists($eachKey, $this->_originalData)||array_key_exists($eachKey, $this->_data)) ||
-				(($allOrChanged === false) && array_key_exists($eachKey, $this->_data)))) {
+			// if I have this property set according to $whichData?
+			if ((($whichData === \ModelManager::DATA_CHANGED) || ($whichData === \ModelManager::DATA_ALL)) &&
+				array_key_exists($eachKey, $this->_data)) {
 				$eachVal = $this->field($eachKey);
-				// if it's an attribute, get applied value
-				if ($this->hasAttr($eachKey)) {
-					$data[$eachKey] = $EachField->apply($eachVal);
+			}
+			elseif ((($whichData === \ModelManager::DATA_ORIGINAL) || ($whichData === \ModelManager::DATA_ALL)) &&
+				array_key_exists($eachKey, $this->_originalData)) {
+				$eachVal = $this->originalField($eachKey);
+			}
+			else {
+				continue;
+			}
+			// if it's an attribute, get applied value
+			if ($this->hasAttr($eachKey)) {
+				$data[$eachKey] = $EachField->apply($eachVal);
+			}
+			// if a relative, get its data through the relation object
+			elseif ($this->hasRelative($eachKey)) {
+				if (is_array($eachVal) && empty($eachVal[\SchemaManager::ID_KEY])) {
+					$data[$eachKey] = $eachVal;
 				}
-				// if a relative, get its data through the relation object
-				elseif ($this->hasRelative($eachKey)) {
-					if (is_array($eachVal) && empty($eachVal['_id'])) {
-						$data[$eachKey] = $eachVal;
-					}
-					elseif (is_object($eachVal) && empty($eachVal->_id)) {
-						$data[$eachKey] = $eachVal->getData($allOrChanged);
-					}
+				elseif (is_object($eachVal) && empty($eachVal->_id)) {
+					$data[$eachKey] = $eachVal->getData($whichData);
+				}
 
-				}
 			}
 		}
 		return $data;

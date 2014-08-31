@@ -47,7 +47,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	public function __get($key) {
 		switch ($key) {
 			// provide ->_id property for compatibility with model
-			case '_id':
+			case \SchemaManager::ID_KEY:
 				return null;
 		}
 	}
@@ -155,7 +155,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public function contains($ModelOrData) {
 		$data = $ModelOrData instanceof \Model
-			? $ModelOrData->getData()
+			? $ModelOrData->getData(\ModelManager::DATA_ALL)
 			: $ModelOrData;
 		foreach ($this->_data as $eachModel) {
 			if (\Model::match($eachModel, $data)) {
@@ -237,14 +237,15 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 
 	/**
 	 * I return data of all members
-	 * @param bool $allOrChanged just to pass by to children
+	 *
+*@param bool $whichData just to pass by to children
 	 * @return array
 	 */
-	public function getData($allOrChanged = true) {
+	public function getData($whichData = true) {
 		$data = array();
 		foreach ($this->_data as $eachKey=>$eachVal) {
 			$data[$eachKey] = $eachVal instanceof \Model
-				? $eachVal->getData($allOrChanged)
+				? $eachVal->getData($whichData)
 				: $eachVal;
 		}
 		return $data;
