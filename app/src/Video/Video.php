@@ -3,8 +3,6 @@
 class Video extends \Model {
 
 	protected static $_schema = array(
-		// this indeed is added automatically
-//		'_id',
 		'user' => array(
 			'class' => 'User',
 			'referredField' => 'name',
@@ -19,8 +17,6 @@ class Video extends \Model {
 		),
 		'title' => array(
 			'toString',
-//			array('\SchemaValidatorMinLength::apply', 5),
-//			'SchemaValidatorMinLength::_apply_' => 5,
 			'minLength' => 5,
 			'maxLength' => 30,
 		),
