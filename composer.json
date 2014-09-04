@@ -1,6 +1,7 @@
 {
 	"name": "tomi20v/maui",
 	"description": "minimal mongoDB relational mapper built around dynamic schemas",
+	"license": "wtfpl",
 	"minimum-stability": "dev",
 	"authors": [
 		{
@@ -8,15 +9,8 @@
 			"email": "tomi20v@gmail.com"
 		}
 	],
-	"repositories": {
-		"tomi20v/tomi20v": {
-			"url": "git@github.com:tomi20v/echop",
-			"type": "git",
-			"reference": "master"
-		}
-	},
 	"require": {
-		"tomi20v/echop": "*",
+		"tomi20v/echop": "dev-master",
 		"phpunit/phpunit": "4.4.*@dev"
 	},
 	"autoload": {
