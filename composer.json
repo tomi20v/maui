@@ -16,7 +16,6 @@
 	"autoload": {
 		"classmap": [
 			"app/src",
-			"ninja/src",
 			"src/maui"
 		]
 	}
