@@ -10,8 +10,7 @@
 		}
 	],
 	"require": {
-		"tomi20v/echop": "dev-master",
-		"phpunit/phpunit": "4.4.*@dev"
+		"tomi20v/echop": "dev-master"
 	},
 	"autoload": {
 		"classmap": [
