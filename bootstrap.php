@@ -1,11 +1,5 @@
 <?php
 
-require('vendor/autoload.php');
-
-require('vendor/tomi20v/echop/src/echop.php');
-require('vendor/tomi20v/echop/src/echox.php');
-require('vendor/tomi20v/echop/src/echon.php');
-
 define('MAUI_ROOT', dirname(__FILE__));
 
 function Maui_autoload($classname) {

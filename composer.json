@@ -16,6 +16,12 @@
 		"classmap": [
 			"app/src",
 			"src/maui"
+		],
+		"files": [
+			"vendor/tomi20v/echop/src/echop.php",
+			"vendor/tomi20v/echop/src/echox.php",
+			"vendor/tomi20v/echop/src/echon.php",
+			"bootstrap.php"
 		]
 	}
 }
