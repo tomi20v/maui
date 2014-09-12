@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 class ModelManager extends \Model {
 
@@ -72,7 +72,7 @@ class ModelManager extends \Model {
 			}
 			if (is_string($m2));
 			elseif (is_array($m2)) {
-				$m2 = isset($m2[\SchemaManager::ID_KEY]) ? $m2[\SchemaManager::ID_KEY] : null;
+				$m2 = isset($m2[\SchemaManager::KEY_ID]) ? $m2[\SchemaManager::KEY_ID] : null;
 			}
 			elseif ($m2 instanceof \Model) {
 				$m2 = $m2->_id;

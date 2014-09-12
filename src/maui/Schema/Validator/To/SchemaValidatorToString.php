@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 class SchemaValidatorToString extends \SchemaValidatorTo {
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 /**
  * abstract class for type casting validators REMEMBER: you must override validate() method as well
