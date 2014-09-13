@@ -10,7 +10,8 @@
 		}
 	],
 	"require": {
-		"tomi20v/echop": "dev-master"
+		"tomi20v/echop": "dev-master",
+        "codeception/codeception": "dev-master"
     },
 	"autoload": {
 		"classmap": [

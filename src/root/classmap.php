@@ -5,13 +5,13 @@
  */
 die();
 
-class Collection extends \Maui\Collection{}
-class Maui extends \Maui\Maui {}
-abstract class Model extends \Maui\Model {}
-class ModelManager extends \Maui\ModelManager{}
-class Schema extends \Maui\Schema{}
-class SchemaAttr extends \Maui\SchemaAttr{}
-class SchemaManager extends \Maui\SchemaManager{}
-class SchemaRelative extends \Maui\SchemaRelative{}
-class SchemaValidator extends \Maui\SchemaValidator{}
-class SchemaValidatorTo extends \Maui\SchemaValidatorTo{}
+class Collection extends \maui\Collection{}
+class Maui extends \maui\Maui {}
+abstract class Model extends \maui\Model {}
+class ModelManager extends \maui\ModelManager{}
+class Schema extends \maui\Schema{}
+class SchemaAttr extends \maui\SchemaAttr{}
+class SchemaManager extends \maui\SchemaManager{}
+class SchemaRelative extends \maui\SchemaRelative{}
+class SchemaValidator extends \maui\SchemaValidator{}
+class SchemaValidatorTo extends \maui\SchemaValidatorTo{}
