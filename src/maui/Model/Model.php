@@ -239,32 +239,36 @@ abstract class Model implements \IteratorAggregate {
 		if ($fieldsOrDeepsave === true) {
 			// first save referenced relatives
 			// @todo - implement deep save...
+			// @todo validation??
+			die('TBI');
 //			$relatives = $this->_getReferencedRelatives();
 //			foreach ($relatives as $EachRelative) {
 //				$EachRelative->save(true, $excludedObjectIds);
 //			}
 			// save only if there is actual data
-			if (!empty($this->_data)) {
-				$data = $this->getData(\ModelManager::DATA_ALL);
-				$result = $DbCollection->save(
-					$data
-				);
-				if (isset($result['ok']) && $result['ok']) {
-					$this->_originalData = $data;
-					// @todo save already created relative objects here
-					$this->_data = array();
-				}
-			}
-			return $result;
+//			if (!empty($this->_data)) {
+//				$data = $this->getData(\ModelManager::DATA_ALL);
+//				$result = $DbCollection->save(
+//					$data
+//				);
+//				if (isset($result['ok']) && $result['ok']) {
+//					$this->_originalData = $data;
+//					// @todo save already created relative objects here
+//					$this->_data = array();
+//				}
+//			}
+//			return $result;
 		}
 		elseif ($fieldsOrDeepsave === false) {
 			if (empty($this->_data)) {
 				return $this;
 			}
+			$this->_beforeSave();
 			if (!$this->validate(false)) {
 				return null;
 			}
 			$data = $this->getData(\ModelManager::DATA_CHANGED);
+#			return $data;
 			if ($this->_id) {
 				$result = $DbCollection->update(
 					array(\SchemaManager::KEY_ID => $this->_id),
@@ -289,6 +293,26 @@ abstract class Model implements \IteratorAggregate {
 			throw new \Exception('TBI');
 		}
 
+	}
+
+	/**
+	 * I will be called before save's validation (so if it sets a value, it must be valid)
+	 * I call myself recursively for relative objects so I am safe being protected
+	 */
+	protected function _beforeSave() {
+		$Schema = $this->_getSchema();
+		foreach ($Schema as $eachKey=>$EachField) {
+			$eachVal = $this->field($eachKey);
+			if ($EachField instanceof \SchemaAttr) {
+				$EachField->beforeSave($eachKey, $this);
+			}
+			elseif (!empty($eachVal)) {
+				debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die('TBT');
+//				foreach ($eachVal as $EachObject) {
+//					$EachObject->_beforeSave();
+//				}
+			}
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

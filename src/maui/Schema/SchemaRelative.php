@@ -148,15 +148,18 @@ class SchemaRelative {
 		return $SchemaObject;
 	}
 
-	public function validate() {
+	public function validate($val, $Model) {
+		die('TBI');
 		return true;
 	}
 
-	public function getErrors() {
+	public function getErrors($val, $Model) {
+		die('TBI');
 		return null;
 	}
 
-	public function apply($val) {
+	public function apply($val, $Model) {
+		die('TBI');
 		return $val;
 	}
 

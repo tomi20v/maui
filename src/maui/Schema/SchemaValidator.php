@@ -73,4 +73,15 @@ class SchemaValidator {
 		return $val;
 	}
 
+	/**
+	 * I am to be called before save, order is beforeSave, validate, writeout
+	 * I shall modify my field (or other fields) directly if necessary
+	 * @param $key
+	 * @param $Model
+	 * @return bool
+	 */
+	public function beforeSave($key, $Model) {
+		return true;
+	}
+
 }

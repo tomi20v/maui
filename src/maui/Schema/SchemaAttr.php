@@ -170,4 +170,11 @@ class SchemaAttr {
 		return $val;
 	}
 
+	public function beforeSave($key, $Model) {
+		foreach ($this->_validators as $EachValidator) {
+			$EachValidator->beforeSave($key, $Model);
+		}
+		return true;
+	}
+
 }
