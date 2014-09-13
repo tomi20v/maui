@@ -158,7 +158,7 @@ class SchemaAttr {
 	public function apply($val, $Model=null) {
 		$wasNull = is_null($val);
 		foreach ($this->_validators as $EachValidator) {
-			$val = $EachValidator->apply($val, $Model=null);
+			$val = $EachValidator->apply($val, $Model);
 			if (is_null($val) && !$wasNull) {
 				return $val;
 			}

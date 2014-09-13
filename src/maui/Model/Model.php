@@ -391,7 +391,7 @@ abstract class Model implements \IteratorAggregate {
 			}
 			// if it's an attribute, get applied value
 			if ($this->hasAttr($eachKey)) {
-				$data[$eachKey] = $EachField->apply($eachVal);
+				$data[$eachKey] = $EachField->apply($eachVal, $this);
 			}
 			// if a relative, get its data through the relation object
 			elseif ($this->hasRelative($eachKey)) {
