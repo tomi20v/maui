@@ -1,10 +1,10 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 abstract class Model implements \IteratorAggregate {
 
-	use \Maui\TraitHasLabel;
+	use \maui\TraitHasLabel;
 
 	/**
 	 * made const so it's easy to get but final
@@ -51,19 +51,19 @@ abstract class Model implements \IteratorAggregate {
 		}
 		elseif (is_object($idOrData) && $idOrData instanceof \MongoId) {
 			if ($dataIsOriginal) {
-				$this->_originalData[\SchemaManager::ID_KEY] = $idOrData;
+				$this->_originalData[\SchemaManager::KEY_ID] = $idOrData;
 			}
 			else {
-				$this->field(\SchemaManager::ID_KEY, $idOrData);
+				$this->field(\SchemaManager::KEY_ID, $idOrData);
 			}
 		}
 		elseif (is_string($idOrData)) {
 			$id = new \MongoId($idOrData);
 			if ($dataIsOriginal) {
-				$this->_originalData[\SchemaManager::ID_KEY] = $id;
+				$this->_originalData[\SchemaManager::KEY_ID] = $id;
 			}
 			else {
-				$this->field(\SchemaManager::ID_KEY, $id);
+				$this->field(\SchemaManager::KEY_ID, $id);
 			}
 		}
 	}
@@ -115,15 +115,15 @@ abstract class Model implements \IteratorAggregate {
 	 * I return the DB collection objection for load save etc
 	 * @return \MongoCollection
 	 */
-	protected function _getDbCollection() {
+	protected static function _getDbCollection() {
 		// this static implementation will cause a headache when implementing inline models
 		static $_DbCollection;
 		if (is_null($_DbCollection)) {
-			$collectionClassname = $this->getCollectionClassName();
+			$collectionClassname = static::getCollectionClassName();
 			if (!class_exists($collectionClassname)) {
 				$collectionClassname = 'Collection';
 			}
-			$dbCollectionName = $collectionClassname::getDbCollectionName(get_class($this));
+			$dbCollectionName = $collectionClassname::getDbCollectionName(get_called_class());
 			$_DbCollection = \Maui::instance()->dbDb()->$dbCollectionName;
 		}
 		return $_DbCollection;
@@ -156,17 +156,34 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
+	 * @param mixed[] $loadData prepared data example to load by
+	 */
+	public static function loadAsSaved($loadData) {
+		die('OK');
+		$Collection = static::_getDbCollection();
+		$data = $Collection->findOne($loadData);
+		$data = is_null($data) ? array() : $data;
+		$classname = isset($data['_type']) ? $data['_type'] : get_called_class();
+		if (!class_exists($classname)) {
+			throw new \Exception(echon($classname) . ' / ' . echon($data));
+		}
+		$data = \SchemaManager::filterBySchema($data, $classname);
+		$Model = new $classname($data, true);
+		return $Model;
+	}
+
+	/**
 	 * I load by attributes
 	 * @param bool $loadEmpty if true, I will load even if data to select is empty
 	 * @return $this
 	 */
 	public function load($loadEmpty=false) {
-		$Collection = $this->_getDbCollection();
-		$findData = $this->getData(\ModelManager::DATA_ALL);
-		if (!$loadEmpty && empty($findData)) {
+		$Collection = static::_getDbCollection();
+		$loadData = $this->getData(\ModelManager::DATA_ALL);
+		if (!$loadEmpty && empty($loadData)) {
 			return false;
 		}
-		$data = $Collection->findOne($findData);
+		$data = $Collection->findOne($loadData);
 		// I might not want to overwrite data if not found... to be checked later
 		$data = is_null($data) ? array() : $data;
 		$this->_originalData = $data;
@@ -178,7 +195,7 @@ abstract class Model implements \IteratorAggregate {
 	 * I load _originalData by original data. Won't touch actual data in _data
 	 */
 	public function loadOriginalData() {
-		$Collection = $this->_getDbCollection();
+		$Collection = static::_getDbCollection();
 		$findData = $this->getData(\ModelManager::DATA_ORIGINAL);
 		if (empty($findData)) {
 			return false;
@@ -217,7 +234,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @throws \Exception
 	 */
 	public function save($fieldsOrDeepsave=true, &$excludedObjectIds=array()) {
-		$DbCollection = $this->_getDbCollection();
+		$DbCollection = static::_getDbCollection();
 		// do deep validation and save
 		if ($fieldsOrDeepsave === true) {
 			// first save referenced relatives
@@ -250,7 +267,7 @@ abstract class Model implements \IteratorAggregate {
 			$data = $this->getData(\ModelManager::DATA_CHANGED);
 			if ($this->_id) {
 				$result = $DbCollection->update(
-					array(\SchemaManager::ID_KEY => $this->_id),
+					array(\SchemaManager::KEY_ID => $this->_id),
 					array('$set' => $data)
 				);
 			}
@@ -367,7 +384,7 @@ abstract class Model implements \IteratorAggregate {
 			}
 			elseif ((($whichData === \ModelManager::DATA_ORIGINAL) || ($whichData === \ModelManager::DATA_ALL)) &&
 				array_key_exists($eachKey, $this->_originalData)) {
-				$eachVal = $this->originalField($eachKey);
+				$eachVal = $this->originalField($eachKey, false);
 			}
 			else {
 				continue;
@@ -378,7 +395,7 @@ abstract class Model implements \IteratorAggregate {
 			}
 			// if a relative, get its data through the relation object
 			elseif ($this->hasRelative($eachKey)) {
-				if (is_array($eachVal) && empty($eachVal[\SchemaManager::ID_KEY])) {
+				if (is_array($eachVal) && empty($eachVal[\SchemaManager::KEY_ID])) {
 					$data[$eachKey] = $eachVal;
 				}
 				elseif (is_object($eachVal) && empty($eachVal->_id)) {
@@ -435,11 +452,14 @@ abstract class Model implements \IteratorAggregate {
 	 * @param null $key
 	 * @return array|null
 	 */
-	public function originalField($key=null) {
+	public function originalField($key=null, $allowLoad=true) {
 		if (func_num_args() == 0) {
 			return $this->_originalData;
 		}
 		elseif ($this->hasAttr($key)) {
+			if (!isset($this->_originalData[$key]) && $allowLoad) {
+				$this->load();
+			}
 			return isset($this->_originalData[$key])
 				? $this->_originalData[$key]
 				: null;
@@ -539,17 +559,17 @@ abstract class Model implements \IteratorAggregate {
 
 	/**
 	 * I set or merge data
-	 * @param miced[] $data data to use
+	 * @param mixed[] $data data to use
 	 * @param bool $overwrite if true, I set originalData. Otherwise, I add $data to
 	 * 		current $_data. NOTE collections are overwritten this way (maybe fix this?)
 	 * @return $this
 	 * @throws \Exception
 	 */
-	public function apply($data, $overwrite=false) {
+	public function apply($data, $dataIsOriginal=false) {
 		if (!is_array($data)) {
 			throw new \Exception(echon($data));
 		}
-		elseif($overwrite) {
+		elseif($dataIsOriginal) {
 			$this->_originalData = $data;
 			$this->_data = array();
 		}

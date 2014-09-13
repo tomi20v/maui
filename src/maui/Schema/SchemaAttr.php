@@ -1,10 +1,10 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 class SchemaAttr {
 
-	use \Maui\TraitHasLabel;
+	use \maui\TraitHasLabel;
 
 	/**
 	 * @var string field name in schema
@@ -102,8 +102,11 @@ class SchemaAttr {
 			return false;
 		}
 		foreach($this->_validators as $EachValidator) {
-			if (!$EachValidator->validate($val, $Model)) {
-				return false;
+			$val = (array)$val;
+			foreach ($val as $eachVal) {
+				if (!$EachValidator->validate($eachVal, $Model)) {
+					return false;
+				}
 			}
 		}
 		return true;
@@ -124,9 +127,12 @@ class SchemaAttr {
 		}
 		else {
 			foreach ($this->_validators as $EachValidator) {
-				$result = $EachValidator->validate($val, $Model);
-				if (!$result) {
-					$errors[] = $EachValidator->getError($val, $Model);
+				$val = (array)$val;
+				foreach ($val as $eachVal) {
+					$result = $EachValidator->validate($eachVal, $Model);
+					if (!$result) {
+						$errors[] = $EachValidator->getError($val, $Model);
+					}
 				}
 				if (is_null($result)) {
 					break;

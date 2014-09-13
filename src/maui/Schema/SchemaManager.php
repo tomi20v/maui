@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 /**
  * Class SchemaManager
@@ -52,8 +52,9 @@ class SchemaManager extends \Schema {
 	/**
 	 * ID field currently have a constant key
 	 */
-	const ID_KEY = '_id';
+	const KEY_ID = '_id';
 
+	const KEY_TYPE = '_type';
 
 	/**
 	 * @var \Schema[string] I hold instances of Schema objects keyed by classname
@@ -69,6 +70,14 @@ class SchemaManager extends \Schema {
 		return static::$_instance;
 	}
 
+	protected static function _toContext($context) {
+		$context = trim($context, '\\');
+		if ($pos = strrpos($context, '\\')) {
+			$context = substr($context, $pos+1);
+		}
+		return $context;
+	}
+
 	/**
 	 * I return the schema for $classname
 	 * @param string $context
@@ -79,9 +88,9 @@ class SchemaManager extends \Schema {
 		if (is_object($context)) {
 			$context = get_class($context);
 		}
-		$context = '\\' . trim($context, '\\');
+		$context = static::_toContext($context);
 		if (!array_key_exists($context, self::$_pool)) {
-			throw new \Exception('schema not found');
+			throw new \Exception('schema ' . $context . ' not found');
 		}
 		return static::$_pool[$context];
 	}
@@ -93,7 +102,7 @@ class SchemaManager extends \Schema {
 	 * @return Schema
 	 */
 	public static function registerSchema($context, $schema) {
-		$context = '\\' . trim($context, '\\');
+		$context = static::_toContext($context);
 		if (isset(self::$_pool[$context])) {
 			throw new \Exception('schema for ' . $context . ' already registered');
 		}
@@ -127,7 +136,19 @@ class SchemaManager extends \Schema {
 	 * @throws \Exception
 	 */
 	protected static function _fromArray($schema, $context) {
-		$ret = new \Schema();
+		if (isset($schema['@extends'])) {
+			$extends = $schema['@extends'];
+			if (!is_string($extends) || !class_exists($extends)) {
+				throw new \Exception(echon($extends));
+			}
+			call_user_func(array($extends, '__init'));
+			$ret = \SchemaManager::getSchema($extends);
+			unset($schema['@extends']);
+		}
+		else {
+			$ret = new \Schema();
+		}
+
 		foreach ($schema as $eachKey=>$eachVal) {
 			// 'field' => 'Classname' reference
 			if (is_string($eachKey) && \SchemaRelative::isSchemaObject($eachVal)) {
@@ -152,15 +173,25 @@ class SchemaManager extends \Schema {
 	 * @param $schema
 	 */
 	public static function ensureHasId($schema) {
-		if (!array_key_exists(static::ID_KEY, $schema)) {
-			$schema = array_reverse($schema);
-			$schema[\SchemaManager::ID_KEY] = static::_getIdDef();
-			$schema = array_reverse($schema);
-			// if there's an '_id' defined only by its name, unset it as it would overwrite our new id field...
-			if (($key = array_search(\SchemaManager::ID_KEY, $schema)) !== false) {
-				unset($schema[$key]);
-			}
+		$additionalFields = array();
+		if (!array_key_exists(static::KEY_ID, $schema)) {
+			$additionalFields[\SchemaManager::KEY_ID] = static::_getIdDef();
 		};
+		if (!array_key_exists(static::KEY_TYPE, $schema)) {
+			$additionalFields[\SchemaManager::KEY_TYPE] = static::_getTypeDef();
+		}
+		if (!empty($additionalFields)) {
+			$schema = $additionalFields + $schema;
+		}
+		// if there's an '_id' defined only by its name, unset it as it would overwrite our new id field...
+		if (($key = array_search(\SchemaManager::KEY_ID, $schema)) !== false) {
+			unset($schema[$key]);
+		}
+		// if there's an '_id' defined only by its name, unset it as it would overwrite our new id field...
+		if (($key = array_search(\SchemaManager::KEY_TYPE, $schema)) !== false) {
+			unset($schema[$key]);
+		}
+
 		return $schema;
 	}
 
@@ -173,6 +204,57 @@ class SchemaManager extends \Schema {
 			'label' => 'ID',
 			'toId',
 		);
+	}
+
+	/**
+	 * I return type field def. you can override it
+	 * @return array
+	 */
+	protected static function _getTypeDef() {
+		return array(
+			'label' => 'type',
+			'toType',
+		);
+	}
+
+	public static function filterBySchema($dataOrModel, $schemaNameOrSchema) {
+		if ($dataOrModel instanceof \Model) {
+			$dataOrModel = $dataOrModel->getData(true);
+		}
+		if (!is_array($dataOrModel)) {
+			throw new \Exception(echon($dataOrModel));
+		}
+		if (is_string($schemaNameOrSchema)) {
+			$schemaNameOrSchema = static::getSchema($schemaNameOrSchema);
+		}
+		if (!$schemaNameOrSchema instanceof \Schema) {
+			throw new \Exception(echon($schemaNameOrSchema));
+		}
+		return static::_filterBySchema($dataOrModel, $schemaNameOrSchema);
+	}
+
+	/**
+	 * @param mixed[] $data
+	 * @param \Schema $Schema
+	 */
+	protected static function _filterBySchema($data, $Schema) {
+		foreach ($data as $eachKey => $eachData) {
+			if ($Schema->hasAttr($eachKey));
+			elseif ($Schema->hasRelative($eachKey)) {
+				if (($eachVal instanceof \Collection) ||
+					($eachVal instanceof \Model)) {
+					$eachVal = $eachVal->getData(true);
+				}
+				if (!is_array($eachVal)) {
+					throw new \Exception(echon($eachVal));
+				}
+				$data[$eachKey] = static::_filterBySchema($eachVal, $Schema->field($eachKey));
+			}
+			else {
+				unset($data[$eachKey]);
+			}
+		}
+		return $data;
 	}
 
 }
