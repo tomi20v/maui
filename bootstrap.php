@@ -4,7 +4,7 @@ define('MAUI_ROOT', dirname(__FILE__));
 
 function Maui_autoload($classname) {
 	if (!strrpos($classname, '\\') &&
-		class_exists($originalClassname = '\\Maui\\' . trim($classname, '\\'))) {
+		class_exists($originalClassname = 'maui\\' . trim($classname, '\\'))) {
 		class_alias($originalClassname, $classname);
 	}
 }

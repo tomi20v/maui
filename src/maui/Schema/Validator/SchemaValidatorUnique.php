@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 /**
  * I represent a validation rule. I can filter, etc

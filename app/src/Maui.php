@@ -3,7 +3,7 @@
 /**
  * Class Maui - holds basic config for the app
  */
-class Maui extends \Maui\Maui {
+class Maui extends \maui\Maui {
 
 //	protected static $_dbHost = 'mongodb://secret:agent@localhost:27017';
 

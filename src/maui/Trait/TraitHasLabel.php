@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 /**
  * Class TraitLabelable - use it for anything that can have a label

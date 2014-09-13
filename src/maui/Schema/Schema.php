@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 class Schema implements \IteratorAggregate {
 
@@ -15,14 +15,27 @@ class Schema implements \IteratorAggregate {
 		}
 	}
 
+	/**
+	 * iterator for foreach
+	 * @return \ArrayIterator|\Traversable
+	 */
 	public function getIterator() {
 		return new \ArrayIterator($this->_schema);
 	}
 
+	/**
+	 * I return all fields
+	 * @return array
+	 */
 	public function fields() {
 		return array_keys($this->_schema);
 	}
 
+	/**
+	 * I return true if schema has field named $key
+	 * @param $key
+	 * @return bool
+	 */
 	public function hasField($key) {
 		return isset($this->_schema[$key]);
 	}
@@ -36,15 +49,26 @@ class Schema implements \IteratorAggregate {
 		return $this->_schema[$key];
 	}
 
+	/**
+	 * I return true if $key field exists and is an attribute
+	 * @param $key
+	 * @return bool
+	 */
 	public function hasAttr($key) {
 		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaAttr);
 	}
 
+	/**
+	 * I return true if $key field exists and is a relative
+	 * @param $key
+	 * @return bool
+	 */
 	public function hasRelative($key) {
 		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaRelative);
 	}
 
 	/**
+	 * I return validators for a field
 	 * @param $key
 	 * @return \SchemaValidator[]
 	 */

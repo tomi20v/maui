@@ -1,8 +1,10 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 class Maui {
+
+	const D = 'default';
 
 	protected static $_instances = array();
 
@@ -37,7 +39,7 @@ class Maui {
 	/**
 	 * @var string environment of current instance. defaults to production to prevent accidentally putting online dev code...
 	 */
-	protected $_env = \Maui\Maui::ENV_PROD;
+	protected $_env = \maui\Maui::ENV_PROD;
 
 	/**
 	 * I return an instance
@@ -47,7 +49,7 @@ class Maui {
 	 */
 	public static function instance($env=null) {
 		if (is_null($env) && empty(static::$_instances)) {
-			$env = \Maui\Maui::ENV_PROD;
+			$env = \maui\Maui::ENV_PROD;
 		}
 		if (is_null($env) && isset(static::$_instances[static::ENV_DEFAULT])) {
 			$env = static::ENV_DEFAULT;

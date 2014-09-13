@@ -1,6 +1,6 @@
 <?php
 
-namespace Maui;
+namespace maui;
 
 /**
  * Class Collection
@@ -47,7 +47,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	public function __get($key) {
 		switch ($key) {
 			// provide ->_id property for compatibility with model
-			case \SchemaManager::ID_KEY:
+			case \SchemaManager::KEY_ID:
 				return null;
 		}
 	}
