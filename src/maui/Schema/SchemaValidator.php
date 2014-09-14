@@ -12,6 +12,11 @@ class SchemaValidator {
 	protected $_parent = null;
 
 	/**
+	 * @var bool shows if current fields has multiple values or just one
+	 */
+	protected $_isMulti = false;
+
+	/**
 	 * I consturct and return a SchemaValidator*** object based on definition
 	 * @param string|array|callable $validator validator definition or direct callback
 	 * @param mixed $validatorValue valud for validator
@@ -37,9 +42,25 @@ class SchemaValidator {
 	 * @param mixed $val parameter value for validator
 	 * @param \Model $parent some validators (eg. which compare to or default to another field value) need this, some not
 	 */
-	function __construct($val, $parent=null) {
+	function __construct($val, $parent=null, $isMulti=null) {
 		$this->_value = $val;
 		$this->_parent = $parent;
+		if (!is_null($isMulti)) {
+			$this->_isMulti = $isMulti ? true : false;
+		}
+	}
+
+	/**
+	 * I return or set if current field has multiple values or not
+	 * @param null $isMulti
+	 * @return $this|bool
+	 */
+	public function isMulti($isMulti=null) {
+		if (func_num_args() == 0) {
+			return $this->_isMulti;
+		}
+		$this->_isMulti = $isMulti ? true : false;
+		return $this;
 	}
 
 	/**

@@ -13,6 +13,10 @@ class SchemaAttr {
 
 	protected $_required = false;
 
+	protected $_hasMin = null;
+
+	protected $_hasMax = null;
+
 	/**
 	 * @var \SchemaValidator[]
 	 */
@@ -51,6 +55,12 @@ class SchemaAttr {
 					case $eachKey === 'label':
 						$SchemaAttr->_label = $eachVal;
 						break;
+					case $eachKey === 'hasMin':
+						$SchemaAttr->_hasMin = (int) $eachVal;
+						break;
+					case $eachKey === 'hasMax':
+						$SchemaAttr->_hasMax = (int) $eachVal;
+						break;
 					case is_numeric($eachKey) && ($eachVal === 'required'):
 						$SchemaAttr->_required = true;
 						break;
@@ -88,6 +98,15 @@ class SchemaAttr {
 	}
 
 	/**
+	 * I return true if field has multiple values (ie. is array)
+	 * @return bool
+	 */
+	public function isMulti() {
+		return (!is_null($this->_hasMin) && ($this->_hasMin > 1)) ||
+			(!is_null($this->_hasMax) && ($this->_hasMax != 1));
+	}
+
+	/**
 	 * I return true if $val passes all validators
 	 * @param $val
 	 * @param null $Model send Model object to validate in context (eg. unique)
@@ -102,9 +121,16 @@ class SchemaAttr {
 			return false;
 		}
 		foreach($this->_validators as $EachValidator) {
-			$val = (array)$val;
-			foreach ($val as $eachVal) {
-				if (!$EachValidator->validate($eachVal, $Model)) {
+			if ($this->isMulti()) {
+				$val = (array)$val;
+				foreach ($val as $eachVal) {
+					if (!$EachValidator->validate($eachVal, $Model)) {
+						return false;
+					}
+				}
+			}
+			else {
+				if (!$EachValidator->validate($val, $Model)) {
 					return false;
 				}
 			}
@@ -127,12 +153,17 @@ class SchemaAttr {
 		}
 		else {
 			foreach ($this->_validators as $EachValidator) {
-				$val = (array)$val;
-				foreach ($val as $eachVal) {
-					$result = $EachValidator->validate($eachVal, $Model);
-					if (!$result) {
-						$errors[] = $EachValidator->getError($val, $Model);
+				if ($this->isMulti()) {
+					$val = (array)$val;
+					foreach ($val as $eachVal) {
+						$result = $EachValidator->validate($eachVal, $Model);
+						if (!$result) {
+							$errors[] = $EachValidator->getError($val, $Model);
+						}
 					}
+				}
+				else {
+					$errors[] = $EachValidator->getError($val, $Model);
 				}
 				if (is_null($result)) {
 					break;
