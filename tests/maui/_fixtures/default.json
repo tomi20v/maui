@@ -33,6 +33,16 @@
                     "name" : "Vin Diesel",
                     "role" : "actor"
                 }
+            ],
+            "awards": [
+                {
+                    "award" : "First award",
+                    "category" : "Best movie",
+                    "year" : "1994"
+                },
+                {
+                    "award" : "Second award"
+                }
             ]
         },
         {

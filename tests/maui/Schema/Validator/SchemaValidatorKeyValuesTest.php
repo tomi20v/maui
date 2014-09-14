@@ -19,7 +19,7 @@ class SchemaValidatorKeyValuesTest extends \PHPUnit_Framework_TestCase {
 	function testFilter($data, $filteredData, $isValid) {
 		$keys = array('a', array(1, 2));
 		$Validator = new \SchemaValidatorKeyValues($keys);
-		$this->assertEquals($isValid, $Validator->filter($data));
+		$this->assertEquals($filteredData, $Validator->filter($data));
 	}
 
 	function dataProvider() {
