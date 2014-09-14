@@ -44,10 +44,11 @@ class Maui {
 	/**
 	 * I return an instance
 	 * @param string $env instance to get. call without param to get default
+	 * @param DB name to use
 	 * @return \Maui
 	 * @throws \Exception
 	 */
-	public static function instance($env=null) {
+	public static function instance($env=null, $dbDb=null) {
 		if (is_null($env) && empty(static::$_instances)) {
 			$env = \maui\Maui::ENV_PROD;
 		}
@@ -56,6 +57,9 @@ class Maui {
 		}
 		elseif (!isset(static::$_instances[$env])) {
 			static::$_instances[$env] = new static($env);
+			if (!is_null($dbDb)) {
+				static::$_instances[$env]->_dbDb = $dbDb;
+			}
 			if (empty(static::$_instances[static::ENV_DEFAULT])) {
 				static::$_instances[static::ENV_DEFAULT] = &static::$_instances[$env];
 			}
@@ -78,11 +82,8 @@ class Maui {
 		return $this->_dbClient;
 	}
 
-	public function dbDb($dbDb = null) {
-		if (!is_null($dbDb)) {
-			$this->_dbDb = $this->dbClient()->$dbDb;
-		}
-		elseif (is_string($this->_dbDb)) {
+	public function dbDb() {
+		if (is_string($this->_dbDb)) {
 			$dbDb = $this->_dbDb;
 			$this->_dbDb = $this->dbClient()->$dbDb;
 		}

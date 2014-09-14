@@ -7,6 +7,8 @@ class SchemaManagerTest extends \PHPUnit_Framework_TestCase {
 	public $DataProp;
 
 	public function setUp() {
+		// import $this->Video
+		ModelTest::setUp();
 		$this->VideoCollection = new \VideoCollection(
 			json_decode(file_get_contents(MAUI_ROOT . '/tests/maui/_fixtures/VideoCollection.001.json'), true)
 		);
@@ -27,10 +29,10 @@ class SchemaManagerTest extends \PHPUnit_Framework_TestCase {
 		);
 		$exp = array_intersect_key($data, array_flip(array('_type', 'title')));
 
-		$res = \SchemaManager::filterBySchema($data, \SchemaManager::getSchema('VideoCollection'));
+		$res = \SchemaManager::filterBySchema($data, \SchemaManager::getSchema('Video'));
 		$this->assertEquals($res, $exp);
 
-		$res = \SchemaManager::filterBySchema($data, \SchemaManager::getSchema('VideoCollection'));
+		$res = \SchemaManager::filterBySchema($data, \SchemaManager::getSchema('Video'));
 		$this->assertEquals($res, $exp);
 
 	}

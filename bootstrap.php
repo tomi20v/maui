@@ -11,3 +11,4 @@ function Maui_autoload($classname) {
 spl_autoload_register('Maui_autoload');
 
 date_default_timezone_set('Europe/Berlin');
+
