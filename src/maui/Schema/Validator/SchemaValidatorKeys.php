@@ -2,7 +2,7 @@
 
 namespace maui;
 
-class SchemaValidatorKeys extends \SchemaValidatorTo {
+class SchemaValidatorKeys extends \SchemaValidator {
 
 	public function validate($val, $Model=null) {
 		if (is_array($val)) {
