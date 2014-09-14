@@ -5,8 +5,7 @@ use Maui\SchemaManager;
 class Staff extends \User {
 
 	protected static $_schema = array(
-		'_id',
-		'name',
+		'@extends' => 'User',
 		'role',
 	);
 

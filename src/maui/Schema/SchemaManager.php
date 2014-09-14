@@ -112,9 +112,19 @@ class SchemaManager extends \Schema {
 	}
 
 	/**
+	 * I tell if a given schema is already registered
+	 * @param $context
+	 * @return bool
+	 */
+	public static function isRegistered($context) {
+		$context = static::_toContext($context);
+		return isset(self::$_pool[$context]);
+	}
+
+	/**
 	 * I construct a $Schema object
-	 * @param $schema data to use
-	 * @param $context the "name" of the class or pseudo-class for which schema stands
+	 * @param array $schema data to use
+	 * @param string $context the "name" of the class or pseudo-class for which schema stands
 	 * @return \Schema
 	 * @throws \Exception
 	 */
@@ -141,7 +151,10 @@ class SchemaManager extends \Schema {
 			if (!is_string($extends) || !class_exists($extends)) {
 				throw new \Exception(echon($extends));
 			}
-			call_user_func(array($extends, '__init'));
+			//call_user_func(array($extends, '__init'));
+			if (!\SchemaManager::isRegistered($extends)) {
+				$extends::__init();
+			}
 			$ret = \SchemaManager::getSchema($extends);
 			unset($schema['@extends']);
 		}
@@ -238,17 +251,19 @@ class SchemaManager extends \Schema {
 	 * @param \Schema $Schema
 	 */
 	protected static function _filterBySchema($data, $Schema) {
-		foreach ($data as $eachKey => $eachData) {
+		/**
+		 * @var SchemaAttr|SchemaRelative $eachVal
+		 */
+		foreach ($data as $eachKey => $eachVal) {
 			if ($Schema->hasAttr($eachKey));
 			elseif ($Schema->hasRelative($eachKey)) {
 				if (($eachVal instanceof \Collection) ||
 					($eachVal instanceof \Model)) {
 					$eachVal = $eachVal->getData(true);
 				}
-				if (!is_array($eachVal)) {
-					throw new \Exception(echon($eachVal));
+				if (is_array($eachVal)) {
+					$data[$eachKey] = static::_filterBySchema($eachVal, $Schema->field($eachKey));
 				}
-				$data[$eachKey] = static::_filterBySchema($eachVal, $Schema->field($eachKey));
 			}
 			else {
 				unset($data[$eachKey]);

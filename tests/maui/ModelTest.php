@@ -12,6 +12,16 @@ class ModelTest extends \maui\TestCase {
 	 */
 	public $Video;
 
+	/**
+	 * @var \ReflectionProperty
+	 */
+	public $propData;
+
+	/**
+	 * @var \ReflectionProperty
+	 */
+	public $propOriginalData;
+
 	public function setup() {
 		parent::setup();
 		$this->Video = new \Video(
@@ -21,6 +31,41 @@ class ModelTest extends \maui\TestCase {
 			),
 			true
 		);
+		$this->propData = new \ReflectionProperty('Model', '_data');
+		$this->propData->setAccessible(true);
+		$this->propOriginalData = new \ReflectionProperty('Model', '_originalData');
+		$this->propOriginalData->setAccessible(true);
+	}
+
+	/**
+	 * @covers Model::__construct
+	 */
+	public function test__construct() {
+		$data = array(
+			'title' => 't',
+		);
+		$Video = new \Video($data);
+		$this->assertEquals(array(), $this->propOriginalData->getValue($Video));
+		$this->assertEquals($data, $this->propData->getValue($Video));
+		$Video = new \Video($data, true);
+		$this->assertEquals($data, $this->propOriginalData->getValue($Video));
+		$this->assertEquals(array(), $this->propData->getValue($Video));
+		$id = new \MongoId('000000000000000000000001');
+		$data = array(
+			'_id' => $id,
+		);
+		$Video = new \Video($id);
+		$this->assertEquals(array(), $this->propOriginalData->getValue($Video));
+		$this->assertEquals($data, $this->propData->getValue($Video));
+		$Video = new \Video($id, true);
+		$this->assertEquals($data, $this->propOriginalData->getValue($Video));
+		$this->assertEquals(array(), $this->propData->getValue($Video));
+		$Video = new \Video('000000000000000000000001');
+		$this->assertEquals(array(), $this->propOriginalData->getValue($Video));
+		$this->assertEquals($data, $this->propData->getValue($Video));
+		$Video = new \Video('000000000000000000000001', true);
+		$this->assertEquals($data, $this->propOriginalData->getValue($Video));
+		$this->assertEquals(array(), $this->propData->getValue($Video));
 	}
 
 	/**
@@ -35,7 +80,7 @@ class ModelTest extends \maui\TestCase {
 		\User::__init();
 		$_pool = $pool->getValue($SchemaManager);
 		$this->assertCount(3, $_pool);
-		$this->assertArrayHasKey('\\User', $_pool);
+		$this->assertArrayHasKey('User', $_pool);
 	}
 
 	/**
@@ -96,15 +141,26 @@ class ModelTest extends \maui\TestCase {
 	 * @covers Model::_relative
 	 */
 	public function test_relative() {
+		$this->markTestIncomplete();
+	}
 
+	/**
+	 * @covers Model::loadAsSaved
+	 * @expectedException Exception
+	 */
+	public function testLoadAsSaved() {
+		$Video = \Video::loadAsSaved(array('_id'=>'000000000000000000000002'));
+		$this->assertEquals('Video', get_class($Video));
+		$Video = \Video::loadAsSaved(array('_id'=>new MongoId('000000000000000000000003')));
+		$this->assertEquals('VideoEpisode', get_class($Video));
+		$Video = \Video::loadAsSaved(array('_id'=>new MongoId('000000000000000000000004')));
 	}
 
 	public function testEnsureLoaded() {
-		$Video = new \Video(array('_id'=>new \MongoId('53eeb9b526e34be00595d011')));
+		$Video = new \Video(array('_id' => new \MongoId('000000000000000000000001')));
 		$this->assertNull($Video->title);
 		$Video->ensureLoaded();
 		$this->assertNotNull($Video->title);
-		echop($Video); die;
 	}
 
 }

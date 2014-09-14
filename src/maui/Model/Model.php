@@ -87,6 +87,9 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public static function __init() {
 		$classname = get_called_class();
+		if (empty(static::$_schema)) {
+			debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die(get_called_class());
+		}
 		\SchemaManager::registerSchema(
 			$classname,
 			\SchemaManager::ensureHasId(static::$_schema)
@@ -159,13 +162,15 @@ abstract class Model implements \IteratorAggregate {
 	 * @param mixed[] $loadData prepared data example to load by
 	 */
 	public static function loadAsSaved($loadData) {
-		die('OK');
 		$Collection = static::_getDbCollection();
 		$data = $Collection->findOne($loadData);
 		$data = is_null($data) ? array() : $data;
 		$classname = isset($data['_type']) ? $data['_type'] : get_called_class();
-		if (!class_exists($classname)) {
-			throw new \Exception(echon($classname) . ' / ' . echon($data));
+		if (!class_exists($classname, false)) {
+			if (!class_exists($classname)) {
+				throw new \Exception(echon($classname) . ' / ' . echon($data));
+			}
+			$classname::__init();
 		}
 		$data = \SchemaManager::filterBySchema($data, $classname);
 		$Model = new $classname($data, true);
@@ -220,7 +225,7 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	public function find($by) {
-		throw new \Exception('TBI'); ;
+		throw new \Exception('TBI');
 	}
 
 	/**
@@ -292,7 +297,7 @@ abstract class Model implements \IteratorAggregate {
 		elseif (is_array($fieldsOrDeepsave)) {
 			throw new \Exception('TBI');
 		}
-
+		return null;
 	}
 
 	/**
@@ -385,6 +390,7 @@ abstract class Model implements \IteratorAggregate {
 		elseif (($num == 2) && is_string($keyOrData)) {
 			$this->$keyOrData = $valOrWhichData;
 		}
+		return null;
 	}
 
 	/**
@@ -443,8 +449,8 @@ abstract class Model implements \IteratorAggregate {
 
 	/**
 	 * I set or get a field. Indeed I just wrap attr() and relative() methods
-	 * @param $key field name to set or get
-	 * @param null $val if present, field will be set, otherwise just returned
+	 * @param string $key field name to set or get
+	 * @param null|mixed $val if present, field will be set, otherwise just returned
 	 * @return $this|Model|null I return $this on set, or mixed for get. Note:
 	 * 	field($key) returns actual data, with fallback to return original data
 	 * @throws \Exception
@@ -469,6 +475,7 @@ abstract class Model implements \IteratorAggregate {
 				return $this->_relative($key, $val);
 			}
 		}
+		return null;
 	}
 
 	/**

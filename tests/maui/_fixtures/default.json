@@ -1,36 +1,79 @@
 {
     "VideoCollection" : [
         {
-            "_id" : "111111111111111111111111",
+            "_id" : "000000000000000000000001",
+            "_type" : "Video",
             "user" : "ArcheAdmin",
             "rating" : "G",
             "title" : "First movie object",
             "subtitle" : "First subtitle ever",
             "length" : 54,
             "staff" : [
-                {"_id":"111111111111111111111112"},
+                {"_id":"100000000000000000000002"},
                 {
                     "name" : "Steven McQueen"
                 }
             ]
         },
         {
-            "_id" : "222222222222222222222222",
+            "_id" : "000000000000000000000002",
+            "_type" : "Video",
             "user" : "ArcheAdmin",
             "rating" : "R",
-            "title" : "First movie object",
-            "subtitle" : "First subtitle ever",
+            "title" : "Second movie object",
+            "subtitle" : "Second subtitle ever",
             "length" : 60,
             "staff" : [
-                {"_id":"111111111111111111111112"},
+                {"_id":"100000000000000000000003"},
                 {
-                    "name" : "Bruce Willis"
+                    "name" : "Bruce Willis",
+                    "role" : "actor"
                 },
                 {
-                    "name" : "Vin Diesel"
+                    "name" : "Vin Diesel",
+                    "role" : "actor"
                 }
             ]
+        },
+        {
+            "_id" : "000000000000000000000003",
+            "_type" : "VideoEpisode",
+            "user" : "ArcheAdmin",
+            "rating" : "R",
+            "title" : "First episode object",
+            "subtitle" : "First episode subtitle",
+            "length" : 12,
+            "season" : "1",
+            "episode" : "2"
+        },
+        {
+            "_id" : "000000000000000000000004",
+            "_type" : "NonExistingClass",
+            "user" : "ArcheAdmin",
+            "rating" : "R",
+            "title" : "First episode object",
+            "subtitle" : "First episode subtitle",
+            "length" : 12
         }
 
+    ],
+    "UserCollection" : [
+        {
+            "_id" : "100000000000000000000001",
+            "_type" : "User",
+            "name" : "ArcheAdmin"
+        },
+        {
+            "_id" : "100000000000000000000002",
+            "_type" : "Staff",
+            "name" : "John Doe",
+            "role" : "johning"
+        },
+        {
+            "_id" : "100000000000000000000003",
+            "_type" : "Staff",
+            "name" : "Jane Doe",
+            "role" : "janing"
+        }
     ]
 }
