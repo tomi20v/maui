@@ -88,7 +88,7 @@ abstract class Model implements \IteratorAggregate {
 	public static function __init() {
 		$classname = get_called_class();
 		if (empty(static::$_schema)) {
-			debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die(get_called_class());
+			throw new \Exception('schema must not be empty, saw empty in ' . $classname);
 		}
 		\SchemaManager::registerSchema(
 			$classname,
@@ -119,13 +119,9 @@ abstract class Model implements \IteratorAggregate {
 	 * @return \MongoCollection
 	 */
 	protected static function _getDbCollection() {
-		// this static implementation will cause a headache when implementing inline models
 		static $_DbCollection;
 		if (is_null($_DbCollection)) {
-			$collectionClassname = static::getCollectionClassName();
-			if (!class_exists($collectionClassname)) {
-				$collectionClassname = 'Collection';
-			}
+			$collectionClassname = static::getCollectionClassname();
 			$dbCollectionName = $collectionClassname::getDbCollectionName(get_called_class());
 			$_DbCollection = \Maui::instance()->dbDb()->$dbCollectionName;
 		}
@@ -139,7 +135,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @extendMe eg. in case reusing a collection class for multiple models
 	 */
 	public static function getCollection($data=null) {
-		$collectionClassname = static::getCollectionClassName();
+		$collectionClassname = static::getCollectionClassname();
 		if (class_exists($collectionClassname)) {
 			$ret = new $collectionClassname($data);
 		}
@@ -154,21 +150,38 @@ abstract class Model implements \IteratorAggregate {
 	 * @return string
 	 * @extendMe you can reuse collections for different models with this
 	 */
-	public static function getCollectionClassName() {
-		return ucfirst(get_called_class()) . 'Collection';
+	public static function getCollectionClassname() {
+		$collectionClassname = ucfirst(get_called_class()) . 'Collection';
+		if (!class_exists($collectionClassname)) {
+			$parentClassname = get_parent_class(get_called_class());
+			$collectionClassname = $parentClassname === false
+				? 'Collection'
+				: $parentClassname::getCollectionClassname();
+		}
+		return $collectionClassname;
 	}
 
 	/**
 	 * @param mixed[] $loadData prepared data example to load by
 	 */
 	public static function loadAsSaved($loadData) {
+		return static::loadAs($loadData);
+	}
+
+	/**
+	 * @param mixed[] $loadData prepared data example to load by
+	 * @param string $classname will return an object of this class
+	 */
+	public static function loadAs($loadData, $classname=null) {
 		$Collection = static::_getDbCollection();
 		$data = $Collection->findOne($loadData);
 		$data = is_null($data) ? array() : $data;
-		$classname = isset($data['_type']) ? $data['_type'] : get_called_class();
+		if (is_null($classname)) {
+			$classname = isset($data['_type']) ? $data['_type'] : get_called_class();
+		}
 		if (!class_exists($classname, false)) {
 			if (!class_exists($classname)) {
-				throw new \Exception(echon($classname) . ' / ' . echon($data));
+				throw new \Exception('class source cannot be loaded for ' . $classname);
 			}
 			$classname::__init();
 		}
@@ -245,7 +258,7 @@ abstract class Model implements \IteratorAggregate {
 			// first save referenced relatives
 			// @todo - implement deep save...
 			// @todo validation??
-			die('TBI');
+			throw new \Exception('TBI');
 //			$relatives = $this->_getReferencedRelatives();
 //			foreach ($relatives as $EachRelative) {
 //				$EachRelative->save(true, $excludedObjectIds);
@@ -312,10 +325,14 @@ abstract class Model implements \IteratorAggregate {
 				$EachField->beforeSave($eachKey, $this);
 			}
 			elseif (!empty($eachVal)) {
-				debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die('TBT');
-//				foreach ($eachVal as $EachObject) {
-//					$EachObject->_beforeSave();
-//				}
+				if ($eachVal instanceof \Collection) {
+					foreach ($eachVal as $EachObject) {
+						$EachObject->_beforeSave();
+					}
+				}
+				else {
+					$eachVal->_beforeSave();
+				}
 			}
 		}
 	}
@@ -675,18 +692,13 @@ abstract class Model implements \IteratorAggregate {
 					unset($this->_isValidated[true]);
 					unset($this->_isValidated[false]);
 				}
+				return count(array_intersect_key($this->_validationErrors, array_flip($key))) ? false : true;
 				break;
 			case $this->hasField($key):
 			case $this->hasRelative($key):
-				unset($this->_validationErrors[$key]);
-				$val = $this->$key;
-				$errors = $this->_getSchema()->$key->getErrors($val);
-				if (!empty($errors)) {
-					$this->_validationErrors[$key] = $errors;
-				};
-				return empty($errors);
+				return $this->validate(array($key));
 			default:
-				throw new \Exception(echon($key));
+				throw new \Exception('cannot validate non existing field def: ' . echon($key));
 		}
 	}
 
@@ -694,12 +706,12 @@ abstract class Model implements \IteratorAggregate {
 		switch(true) {
 			case $key === true:
 			case $key === false:
-				if (!$this->_isValidated[$key]) {
+				if (!isset($this->_isValidated[$key]) || !$this->_isValidated[$key]) {
 					$this->validate($key);
 				}
 				return $this->_validationErrors;
 			case is_array($key):
-				if ($this->_isValidated[true]);
+				if (isset($this->_isValidated[true]) && $this->_isValidated[true]);
 				else {
 					foreach ($key as $eachKey) {
 						if (!isset($this->_isValidated[$eachKey]) || !$this->_isValidated[$eachKey]) {
@@ -711,12 +723,9 @@ abstract class Model implements \IteratorAggregate {
 				return array_intersect_key($this->_validationErrors, array_flip($key));
 			case $this->hasField($key):
 			case $this->hasRelative($key):
-				if (!isset($this->_isValidated[$key]) || !$this->_isValidated[$key]) {
-					$this->validate($key);
-				}
-				return isset($this->_validationErrors[$key]) ? $this->_validationErrors[$key] : null;
+				return $this->getErrors(array($key));
 			default:
-				throw new \Exception(echon($key));
+				throw new \Exception('cannot get error for non existing field def: ' . echon($key));;
 		}
 	}
 

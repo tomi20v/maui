@@ -28,8 +28,8 @@ class Video extends \Model {
 		'length' => array(
 			'label' => 'Play time',
 			'toInt',
-			'min' => 1,
-			'max' => 600,
+			'minValue' => 1,
+			'minValue' => 600,
 		),
 		'director' => array(
 			'class' => 'Staff',
@@ -44,7 +44,13 @@ class Video extends \Model {
 			'schema' => array(
 				'name',
 			),
-		)
+		),
+		'awards' => array(
+			'toArray',
+			'hasMax' => 10,
+			'keys' => array('award', 'category', 'year'),
+			'keysRequired' => array('award'),
+		),
 	);
 
 }

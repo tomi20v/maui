@@ -153,6 +153,7 @@ class SchemaAttr {
 		}
 		else {
 			foreach ($this->_validators as $EachValidator) {
+				$result = null;
 				if ($this->isMulti()) {
 					$val = (array)$val;
 					foreach ($val as $eachVal) {

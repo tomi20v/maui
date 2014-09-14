@@ -59,13 +59,10 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public static function getDbCollectionName($modelClassname=null) {
 		if (!empty($modelClassname)) {
-			$collectionName = call_user_func(array($modelClassname, 'getCollectionClassName'));
+			$collectionName = $modelClassname::getCollectionClassName();
 		}
 		else {
 			$collectionName = get_called_class();
-		}
-		if ($pos = strrpos($collectionName, '\\')) {
-			$collectionName = substr($collectionName, $pos+1);
 		}
 		return $collectionName;
 	}

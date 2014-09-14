@@ -151,7 +151,6 @@ class SchemaManager extends \Schema {
 			if (!is_string($extends) || !class_exists($extends)) {
 				throw new \Exception(echon($extends));
 			}
-			//call_user_func(array($extends, '__init'));
 			if (!\SchemaManager::isRegistered($extends)) {
 				$extends::__init();
 			}

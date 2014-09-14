@@ -148,18 +148,33 @@ class SchemaRelative {
 		return $SchemaObject;
 	}
 
+	/**
+	 * @TODO implement!
+	 * @param $val
+	 * @param $Model
+	 * @return bool
+	 */
 	public function validate($val, $Model) {
-		die('TBI');
 		return true;
 	}
 
+	/**
+	 * @TODO implement!
+	 * @param $val
+	 * @param $Model
+	 * @return null
+	 */
 	public function getErrors($val, $Model) {
-		die('TBI');
 		return null;
 	}
 
+	/**
+	 * @TODO implement!
+	 * @param $val
+	 * @param $Model
+	 * @return mixed
+	 */
 	public function apply($val, $Model) {
-		die('TBI');
 		return $val;
 	}
 
