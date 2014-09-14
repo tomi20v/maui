@@ -1,8 +1,8 @@
 {
 	"_id" : "53eeb9b526e34be00595d011",
 	"user" : "ArcheAdmin",
-	"title" : "First movie object",
-	"subtitle" : "First subtitle ever",
+	"title" : "Test movie object",
+	"subtitle" : "Test subtitle",
 	"length" : 54,
 	"staff" : [
 		{"_id":"53f27f9126e34bb1049f5d4c"},

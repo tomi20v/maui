@@ -1,0 +1,36 @@
+{
+    "Video" : [
+        {
+            "_id" : "111111111111111111111111",
+            "user" : "ArcheAdmin",
+            "rating" : "G",
+            "title" : "First movie object",
+            "subtitle" : "First subtitle ever",
+            "length" : 54,
+            "staff" : [
+                {"_id":"111111111111111111111112"},
+                {
+                    "name" : "Steven McQueen"
+                }
+            ]
+        },
+        {
+            "_id" : "222222222222222222222222",
+            "user" : "ArcheAdmin",
+            "rating" : "R",
+            "title" : "First movie object",
+            "subtitle" : "First subtitle ever",
+            "length" : 60,
+            "staff" : [
+                {"_id":"111111111111111111111112"},
+                {
+                    "name" : "Bruce Willis"
+                },
+                {
+                    "name" : "Vin Diesel"
+                }
+            ]
+        }
+
+    ]
+}

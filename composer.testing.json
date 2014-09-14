@@ -11,7 +11,7 @@
 	],
 	"require": {
 		"tomi20v/echop": "dev-master",
-        "codeception/codeception": "dev-master"
+        "phpunit/phpunit": "4.4.*@dev"
     },
 	"autoload": {
 		"classmap": [

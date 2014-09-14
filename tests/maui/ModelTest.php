@@ -4,7 +4,7 @@ class_exists('\Video') or die('class Video not found');
 class_exists('\User') or die('class User not found');
 class_exists('\Staff') or die('class Staff not found');
 
-class ModelTest extends \PHPUnit_Framework_TestCase {
+class ModelTest extends \maui\TestCase {
 
 	/**
 	 * I will contain the default video fixture
@@ -13,6 +13,7 @@ class ModelTest extends \PHPUnit_Framework_TestCase {
 	public $Video;
 
 	public function setup() {
+		parent::setup();
 		$this->Video = new \Video(
 			json_decode(
 				file_get_contents(MAUI_ROOT . '/tests/maui/_fixtures/Video.001.json'),
