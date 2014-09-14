@@ -14,4 +14,5 @@ class SchemaAttr extends \maui\SchemaAttr{}
 class SchemaManager extends \maui\SchemaManager{}
 class SchemaRelative extends \maui\SchemaRelative{}
 class SchemaValidator extends \maui\SchemaValidator{}
+class SchemaValidatorKeys extends \maui\SchemaValidatorKeys{}
 class SchemaValidatorTo extends \maui\SchemaValidatorTo{}
