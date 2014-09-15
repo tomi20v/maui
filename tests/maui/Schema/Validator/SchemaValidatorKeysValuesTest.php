@@ -1,24 +1,24 @@
 <?php
 
-class SchemaValidatorKeyValuesTest extends \PHPUnit_Framework_TestCase {
+class SchemaValidatorKeysValuesTest extends \PHPUnit_Framework_TestCase {
 
 	/**
 	 * @dataProvider dataProvider
-	 * @covers SchemaValidatorKeyValues::validate
+	 * @covers SchemaValidatorKeysValues::validate
 	 */
 	function testValidate($data, $filteredData, $isValid) {
 		$keys = array('a', array(1, 2));
-		$Validator = new \SchemaValidatorKeyValues($keys);
+		$Validator = new \SchemaValidatorKeysValues($keys);
 		$this->assertEquals($isValid, $Validator->validate($data));
 	}
 
 	/**
 	 * @dataProvider dataProvider
-	 * @covers SchemaValidatorKeyValues::filter
+	 * @covers SchemaValidatorKeysValues::filter
 	 */
 	function testFilter($data, $filteredData, $isValid) {
 		$keys = array('a', array(1, 2));
-		$Validator = new \SchemaValidatorKeyValues($keys);
+		$Validator = new \SchemaValidatorKeysValues($keys);
 		$this->assertEquals($filteredData, $Validator->filter($data));
 	}
 

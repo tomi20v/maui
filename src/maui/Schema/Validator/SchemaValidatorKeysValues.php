@@ -3,11 +3,11 @@
 namespace maui;
 
 /**
- * Class SchemaValidatorKeyValues - this validator is for checking a given field in
+ * Class SchemaValidatorKeysValues - this validator is for checking a given field in
  *
  * @package maui
  */
-class SchemaValidatorKeyValues extends \SchemaValidator {
+class SchemaValidatorKeysValues extends \SchemaValidator {
 
 	public function validate($val, $Model=null) {
 		if (is_array($val)) {
