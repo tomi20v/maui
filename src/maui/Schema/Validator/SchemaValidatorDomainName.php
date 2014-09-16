@@ -4,7 +4,7 @@ namespace maui;
 
 class SchemaValidatorDomainName extends \SchemaValidator {
 
-	const DOMAIN_PREG = '/([0-9a-z-]{2,}\.[0-9a-z-]{2,3}\.[0-9a-z-]{2,3}|[0-9a-z-]{2,}\.[0-9a-z-]{2,3})$/i';
+	const DOMAIN_PREG = '/([0-9a-z-]{2,}\.[0-9a-z-]{2,3}\.[0-9a-z-]{2,5}|[0-9a-z-]{2,}\.[0-9a-z-]{2,5})$/i';
 
 	public function validate($val, $Model=null) {
 		if (is_string($val)) {

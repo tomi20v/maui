@@ -23,7 +23,7 @@ class SchemaValidatorToString extends \SchemaValidatorTo {
 	}
 
 	public function getError($val, $Model=null) {
-		return 'shall be a string';
+		return 'shall be a string, saw: ' . echon($val);
 	}
 
 }

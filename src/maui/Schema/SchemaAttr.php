@@ -164,7 +164,10 @@ class SchemaAttr {
 					}
 				}
 				else {
-					$errors[] = $EachValidator->getError($val, $Model);
+					$result = $EachValidator->validate($val, $Model);
+					if (!$result) {
+						$errors[] = $EachValidator->getError($val, $Model);
+					}
 				}
 				if (is_null($result)) {
 					break;
