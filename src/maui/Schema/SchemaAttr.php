@@ -190,15 +190,16 @@ class SchemaAttr {
 	 * @param $val
 	 * @return mixed|null
 	 */
-	public function apply($val, $Model=null) {
-		$wasNull = is_null($val);
+	public function apply(&$val, $Model=null) {
+//		$wasNull = is_null($val);
 		foreach ($this->_validators as $EachValidator) {
-			$val = $EachValidator->apply($val, $Model);
-			if (is_null($val) && !$wasNull) {
-				return $val;
+			$result = $EachValidator->apply($val, $Model);
+//			if (is_null($result) && !$wasNull) {
+			if (is_null($result)) {
+				return null;
 			}
 		}
-		return $val;
+		return true;
 	}
 
 	public function filter($val) {

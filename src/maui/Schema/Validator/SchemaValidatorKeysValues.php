@@ -21,13 +21,13 @@ class SchemaValidatorKeysValues extends \SchemaValidator {
 		return null;
 	}
 
-	public function apply($val, $Model=null) {
-		return is_array($val) ? $val : array($val);
-	}
-
 	public function getError($val, $Model=null) {
 		$key = $this->_value[0];
 		return 'value on key ' . $key . ' should be in (' . implode(', ', $this->_value[1]) . '), but saw: ' . @$val[$key];
+	}
+
+	public function apply(&$val, $Model=null) {
+		return is_array($val) ? true : null;
 	}
 
 	public function filter($val, $Model=null) {

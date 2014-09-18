@@ -14,16 +14,16 @@ class SchemaValidatorToString extends \SchemaValidatorTo {
 		return null;
 	}
 
-	public function apply($val, $Model=null) {
+	public function getError($val, $Model=null) {
+		return 'shall be a string, saw: ' . echon($val);
+	}
+
+	public function apply(&$val, $Model=null) {
 		if (!$this->validate($val)) {
 			return null;
 		}
 		$val = (string) $val;
-		return $val;
-	}
-
-	public function getError($val, $Model=null) {
-		return 'shall be a string, saw: ' . echon($val);
+		return true;
 	}
 
 }

@@ -174,8 +174,8 @@ class SchemaRelative {
 	 * @param $Model
 	 * @return mixed
 	 */
-	public function apply($val, $Model) {
-		return $val;
+	public function apply(&$val, $Model) {
+		return true;
 	}
 
 	public function filter($val) {

@@ -15,7 +15,7 @@ class SchemaValidatorCallback extends \SchemaValidator {
 		throw new \Exception('TBI');
 	}
 
-	public function apply($val, $Model=null) {
+	public function apply(&$val, $Model=null) {
 		throw new \Exception('TBI');
 	}
 

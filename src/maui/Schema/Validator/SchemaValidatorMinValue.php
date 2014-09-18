@@ -15,8 +15,8 @@ class SchemaValidatorMinValue extends \SchemaValidator {
 		return 'min ' . $this->_value;
 	}
 
-	public function apply($val, $Model=null) {
-		return is_scalar($val) ? $val : null;
+	public function apply(&$val, $Model=null) {
+		return is_scalar($val) ? true : null;
 	}
 
 }

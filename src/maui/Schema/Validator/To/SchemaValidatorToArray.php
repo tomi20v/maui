@@ -11,16 +11,16 @@ class SchemaValidatorToArray extends \SchemaValidatorTo {
 		return null;
 	}
 
-	public function apply($val, $Model=null) {
+	public function getError($val, $Model=null) {
+		return 'shall be an array';
+	}
+
+	public function apply(&$val, $Model=null) {
 		if (!$this->validate($val)) {
 			return null;
 		}
 		$val = (array) $val;
-		return $val;
-	}
-
-	public function getError($val, $Model=null) {
-		return 'shall be an array';
+		return true;
 	}
 
 }

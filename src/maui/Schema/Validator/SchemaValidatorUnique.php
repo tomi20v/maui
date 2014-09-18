@@ -12,7 +12,7 @@ class SchemaValidatorUnique extends \SchemaValidator {
 	 * @param $val
 	 * @return bool true
 	 */
-	public function validate(&$val, $Model=null) {
+	public function validate($val, $Model=null) {
 		return true;
 	}
 

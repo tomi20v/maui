@@ -20,12 +20,12 @@ class SchemaValidatorKeysEither extends \SchemaValidator {
 		return null;
 	}
 
-	public function apply($val, $Model=null) {
-		return is_array($val) ? $val : null;
-	}
-
 	public function getError($val, $Model=null) {
 		return 'values can contain either but only one of (' . implode(', ', $this->_value[]) . '), but saw: ' . implode(', ', array_keys($val));
+	}
+
+	public function apply(&$val, $Model=null) {
+		return is_array($val) ? true : null;
 	}
 
 	public function filter($val, $Model=null) {

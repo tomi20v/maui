@@ -90,8 +90,8 @@ class SchemaValidator {
 	 * @return mixed|null apply() should return null if $val is not applicable
 	 * @extendMe
 	 */
-	public function apply($val, $Model=null) {
-		return $val;
+	public function apply(&$val, $Model=null) {
+		return true;
 	}
 
 	/**

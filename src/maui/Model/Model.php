@@ -438,7 +438,8 @@ abstract class Model implements \IteratorAggregate {
 			}
 			// if it's an attribute, get applied value
 			if ($this->hasAttr($eachKey)) {
-				$data[$eachKey] = $EachField->apply($eachVal, $this);
+				$EachField->apply($eachVal, $this);
+				$data[$eachKey] = $eachVal;
 			}
 			// if a relative, get its data through the relation object
 			elseif ($this->hasRelative($eachKey)) {
@@ -632,6 +633,17 @@ abstract class Model implements \IteratorAggregate {
 	////////////////////////////////////////////////////////////////////////////////
 	// validation
 	////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * I am a fast teller if object has any field value set (so no need to call for a getData())
+	 * @param string|string[] array of fieldnames to exclude from comparison
+	 * @return bool
+	 */
+	public function isEmpty($excludeKeys) {
+		$excludeKeys = (array) $excludeKeys;
+		$keys = array_diff(array_keys($this->_data), $excludeKeys);
+		return empty($keys);
+	}
 
 	/**
 	 * @todo make it cached by $this->_isValid again!?

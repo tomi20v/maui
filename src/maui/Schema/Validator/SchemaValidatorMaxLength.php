@@ -18,8 +18,8 @@ class SchemaValidatorMaxLength extends \SchemaValidator {
 		return 'max length' . $this->_value;
 	}
 
-	public function apply($val, $Model=null) {
-		return (is_string($val) || is_array($val)) ? $val : null;
+	public function apply(&$val, $Model=null) {
+		return (is_string($val) || is_array($val)) ? true : null;
 	}
 
 }

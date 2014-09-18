@@ -11,12 +11,12 @@ class SchemaValidatorKeys extends \SchemaValidator {
 		return null;
 	}
 
-	public function apply($val, $Model=null) {
-		return is_array($val) ? $val : array($val);
-	}
-
 	public function getError($val, $Model=null) {
 		return 'keys in array shall be {' . implode(', ', $this->_value) . ')';
+	}
+
+	public function apply(&$val, $Model=null) {
+		return is_array($val) ? true : array($val);
 	}
 
 	public function filter($val, $Model=null) {
