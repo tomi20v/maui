@@ -4,10 +4,10 @@ class_exists('\Video') or die('class Video not found');
 class_exists('\User') or die('class User not found');
 class_exists('\Staff') or die('class Staff not found');
 
-class ModelTester1 extends \Model {
+class ModelTester1 extends \maui\Model {
 	static $_schema = array();
 }
-class ModelTester2 extends \Model {
+class ModelTester2 extends \maui\Model {
 	static $_schema = array('asd');
 	public static function getCollectionClassname() {
 		return 'NonexistingCollection';
@@ -121,8 +121,6 @@ class ModelTest extends \maui\TestCase {
 
 	/**
 	 * @covers Model::__init
-	 * @expectedException \Exception
-	 * @expectedExceptionMessage schema must not be empty, saw empty in
 	 */
 	public function testInit() {
 
@@ -134,6 +132,15 @@ class ModelTest extends \maui\TestCase {
 		$_pool = $pool->getValue($SchemaManager);
 		$this->assertCount(5, $_pool);
 		$this->assertArrayHasKey('User', $_pool);
+
+	}
+
+	/**
+	 * @covers Model::__init
+	 * @expectedException \Exception
+	 * @expectedExceptionMessage schema must not be empty, saw empty in
+	 */
+	public function testInit2() {
 
 		\ModelTester1::__init();
 
@@ -241,8 +248,6 @@ class ModelTest extends \maui\TestCase {
 	/**
 	 * @covers Model::originalField
 	 * @covers Model::field
-	 * @expectedException Exception
-	 * @expectedExceptionMessage asd
 	 */
 	public function testOriginalFieldAndField1() {
 		$originalData = new ReflectionProperty($this->Video, '_originalData');
@@ -255,8 +260,15 @@ class ModelTest extends \maui\TestCase {
 		$this->Video->length = 24;
 		$this->assertEquals(24, $this->Video->field('length'));
 		$this->assertEquals(54, $this->Video->originalField('length'));
+	}
 
-		// should throw
+	/**
+	 * @covers Model::originalField
+	 * @covers Model::field
+	 * @expectedException Exception
+	 * @expectedExceptionMessage asd
+	 */
+	public function testOriginalFieldAndField2() {
 		$this->Video->originalField('asd');
 	}
 
@@ -288,21 +300,25 @@ class ModelTest extends \maui\TestCase {
 
 	/**
 	 * @covers Model::loadAsSaved
-	 * @expectedException Exception
-	 * @expectedExceptionMessage class source cannot be loaded for
 	 */
 	public function testLoadAsSaved() {
 		$Video = \Video::loadAsSaved(array('_id'=>'000000000000000000000002'));
 		$this->assertEquals('Video', get_class($Video));
 		$Video = \Video::loadAsSaved(array('_id'=>new MongoId('000000000000000000000003')));
 		$this->assertEquals('VideoEpisode', get_class($Video));
-		$Video = \Video::loadAsSaved(array('_id'=>new MongoId('000000000000000000000004')));
+	}
+
+	/**
+	 * @covers Model::loadAsSaved
+	 * @expectedException Exception
+	 * @expectedExceptionMessage class source cannot be loaded for
+	 */
+	public function testLoadAsSaved2() {
+		\Video::loadAsSaved(array('_id'=>new MongoId('000000000000000000000004')));
 	}
 
 	/**
 	 * @covers Model::loadAs
-	 * @expectedException Exception
-	 * @expectedExceptionMessage class source cannot be loaded for NonexistingModel
 	 */
 	public function testLoadAs() {
 		$Video = \Video::loadAs(array('_id'=>'000000000000000000000002'));
@@ -313,7 +329,15 @@ class ModelTest extends \maui\TestCase {
 		$this->assertEquals('VideoEpisode', get_class($Video));
 		$Video = \Video::loadAs(array('_id'=>'000000000000000000000002'), 'ModelTesterA');
 		$this->assertEquals('ModelTesterA', get_class($Video));
-		$Video = \Video::loadAs(array('_id'=>'000000000000000000000002'), 'NonexistingModel');
+	}
+
+	/**
+	 * @covers Model::loadAs
+	 * @expectedException Exception
+	 * @expectedExceptionMessage class source cannot be loaded for NonexistingModel
+	 */
+	public function testLoadAs2() {
+		\Video::loadAs(array('_id'=>'000000000000000000000002'), 'NonexistingModel');
 	}
 
 	/**
@@ -396,8 +420,6 @@ class ModelTest extends \maui\TestCase {
 
 	/**
 	 * @covers Model::validate
-	 * @expectedException Exception
-	 * @expectedExceptionMessage cannot validate non existing field def
 	 */
 	public function testValidate() {
 		$this->Video = new \Video(0);
@@ -419,15 +441,19 @@ class ModelTest extends \maui\TestCase {
 
 		$this->assertFalse($this->Video->validate('title'));
 		$this->assertTrue($this->Video->validate('description'));
+	}
 
+	/**
+	 * @covers Model::validate
+	 * @expectedException Exception
+	 * @expectedExceptionMessage cannot validate non existing field def
+	 */
+	public function testValidate2() {
 		$this->assertTrue($this->Video->validate('asd'));
-
 	}
 
 	/**
 	 * @covers Model::getErrors
-	 * @expectedException Exception
-	 * @expectedExceptionMessage cannot get error for non existing field def
 	 */
 	public function testGetErrors() {
 
@@ -449,8 +475,16 @@ class ModelTest extends \maui\TestCase {
 
 		$this->assertEquals(array(), array_keys($Video->getErrors('description')));
 
-		$this->assertEquals(array(), array_keys($Video->getErrors('asd')));
+	}
 
+	/**
+	 * @covers Model::getErrors
+	 * @expectedException Exception
+	 * @expectedExceptionMessage cannot get error for non existing field def
+	 */
+	public function testGetErrors2() {
+		$Video = new \Video();
+		$this->assertEquals(array(), array_keys($Video->getErrors('asd')));
 	}
 
 }

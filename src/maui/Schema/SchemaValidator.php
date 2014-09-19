@@ -29,11 +29,11 @@ class SchemaValidator {
 			$validatorClassname = '\\SchemaValidator' . $validator;
 			$Validator = new $validatorClassname($validatorValue, $parent);
 		}
-		elseif (is_callable($validator)) {
-			$Validator = new \SchemaValidatorCallback($validatorValue, $parent);
-		}
+//		elseif (is_callable($validator)) {
+//			$Validator = new \SchemaValidatorCallback($validatorValue, $parent);
+//		}
 		else {
-			throw new \Exception('TBI');
+			throw new \Exception('TBI - SchemaValidator::from');
 		}
 		return $Validator;
 	}

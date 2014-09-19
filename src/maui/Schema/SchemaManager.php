@@ -149,7 +149,7 @@ class SchemaManager extends \Schema {
 		if (isset($schema['@extends'])) {
 			$extends = $schema['@extends'];
 			if (!is_string($extends) || !class_exists($extends)) {
-				throw new \Exception(echon($extends));
+				throw new \Exception('class to extend does not exist: ' . echon($extends));
 			}
 			if (!\SchemaManager::isRegistered($extends)) {
 				$extends::__init();
@@ -174,7 +174,7 @@ class SchemaManager extends \Schema {
 				$ret->_schema[$eachKey] = \SchemaAttr::from($eachVal, $eachKey);
 			}
 			else {
-				throw new \Exception(echon($eachKey) . echon($eachVal));
+				throw new \Exception('invalid schema entry: ' . echon($eachKey) . ' / ' . echon($eachVal));
 			}
 		}
 		return $ret;
@@ -199,7 +199,7 @@ class SchemaManager extends \Schema {
 		if (($key = array_search(\SchemaManager::KEY_ID, $schema)) !== false) {
 			unset($schema[$key]);
 		}
-		// if there's an '_id' defined only by its name, unset it as it would overwrite our new id field...
+		// if there's a '_type' defined only by its name, unset it as it would overwrite our new id field...
 		if (($key = array_search(\SchemaManager::KEY_TYPE, $schema)) !== false) {
 			unset($schema[$key]);
 		}
@@ -234,13 +234,13 @@ class SchemaManager extends \Schema {
 			$dataOrModel = $dataOrModel->getData(true);
 		}
 		if (!is_array($dataOrModel)) {
-			throw new \Exception(echon($dataOrModel));
+			throw new \Exception('cannot use for data: ' . echon($dataOrModel));
 		}
 		if (is_string($schemaNameOrSchema)) {
 			$schemaNameOrSchema = static::getSchema($schemaNameOrSchema);
 		}
 		if (!$schemaNameOrSchema instanceof \Schema) {
-			throw new \Exception(echon($schemaNameOrSchema));
+			throw new \Exception('not a schema: ' . echon($schemaNameOrSchema));
 		}
 		return static::_filterBySchema($dataOrModel, $schemaNameOrSchema);
 	}
