@@ -16,6 +16,7 @@ class Video extends \Model {
 			'in' => array('G','PG','PG-13','R','NC-17'),
 		),
 		'title' => array(
+			'required',
 			'toString',
 			'minLength' => 5,
 			'maxLength' => 30,
@@ -26,10 +27,11 @@ class Video extends \Model {
 		),
 		'description',
 		'length' => array(
+			'required',
 			'label' => 'Play time',
 			'toInt',
 			'minValue' => 1,
-			'minValue' => 600,
+			'maxValue' => 600,
 		),
 		'director' => array(
 			'class' => 'Staff',

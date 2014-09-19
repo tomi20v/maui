@@ -400,21 +400,24 @@ class ModelTest extends \maui\TestCase {
 	 * @expectedExceptionMessage cannot validate non existing field def
 	 */
 	public function testValidate() {
+		$this->Video = new \Video(0);
 		$this->assertFalse($this->Video->validate());
 		$P = new \ReflectionProperty($this->Video, '_isValidated');
 		$P->setAccessible(true);
 		$Q = new \ReflectionProperty($this->Video, '_validationErrors');
 		$Q->setAccessible(true);
 		$this->assertCount(16, $P->getValue($this->Video));
-		$this->assertEquals(array('_id','title','subtitle','length'), array_keys($Q->getValue($this->Video)));
+
+		$this->assertEquals(array('title','subtitle','length'), array_keys($Q->getValue($this->Video)));
 
 		$V = new \Video(array('title'=>'ttttt', 'subtitle'=>'sssss'));
-		$this->assertFalse($V->validate(false));
+		$this->assertTrue($V->validate(false));
+		$this->assertFalse($V->validate(true));
 
 		$this->assertFalse($this->Video->validate(array('_id','title')));
 		$this->assertTrue($this->Video->validate(array('description')));
 
-		$this->assertFalse($this->Video->validate('_id'));
+		$this->assertFalse($this->Video->validate('title'));
 		$this->assertTrue($this->Video->validate('description'));
 
 		$this->assertTrue($this->Video->validate('asd'));
@@ -434,13 +437,15 @@ class ModelTest extends \maui\TestCase {
 		$this->assertEquals($Q->getValue($this->Video), $errors);
 
 		$Video = new \Video($this->videoData);
+		$Video->title = null;
 		$fields = array('_id', 'title');
-		$this->assertEquals($fields, array_keys($Video->getErrors($fields)));
+		$field = array('title');
+		$this->assertEquals($field, array_keys($Video->getErrors($fields)));
 
-		$fields2 = array('_id', 'title', 'description');
-		$this->assertEquals($fields, array_keys($Video->getErrors($fields2)));
+		$fields2 = array('title', 'description');
+		$this->assertEquals($field, array_keys($Video->getErrors($fields2)));
 
-		$this->assertEquals(array('title'), array_keys($Video->getErrors('title')));
+		$this->assertEquals($field, array_keys($Video->getErrors('title')));
 
 		$this->assertEquals(array(), array_keys($Video->getErrors('description')));
 

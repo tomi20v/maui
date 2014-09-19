@@ -146,7 +146,7 @@ class SchemaAttr {
 	 */
 	public function getErrors($val, $Model=null) {
 		$errors = array();
-		if (is_null($val)) {
+		if (is_null($val) || ($this->isMulti() && ($val===array()))) {
 			if ($this->_required) {
 				$errors[] = $this->_getRequiredError();
 			}
@@ -186,26 +186,36 @@ class SchemaAttr {
 	}
 
 	/**
-	 * I return $val applied to this attribute
-	 * @param $val
-	 * @return mixed|null
+	 * I apply $val so its suitable for the current field
+	 * @param $val it will be modified directly
+	 * @return bool true if value could be applied
 	 */
 	public function apply(&$val, $Model=null) {
-//		$wasNull = is_null($val);
+		if (is_null($Model)) { debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die('QW'); }
 		foreach ($this->_validators as $EachValidator) {
 			$result = $EachValidator->apply($val, $Model);
-//			if (is_null($result) && !$wasNull) {
 			if (is_null($result)) {
-				return null;
+				return false;
 			}
 		}
 		return true;
 	}
 
+	/**
+	 * I return a value that is part of $val but suits my field, if possible (eg. cut a 5 member array to 3 for fallback)
+	 * @param $val
+	 * @return mixed
+	 */
 	public function filter($val) {
 		return $val;
 	}
 
+	/**
+	 * I will be called right before save
+	 * @param $key
+	 * @param $Model
+	 * @return bool
+	 */
 	public function beforeSave($key, $Model) {
 		foreach ($this->_validators as $EachValidator) {
 			$EachValidator->beforeSave($key, $Model);
