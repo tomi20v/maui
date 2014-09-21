@@ -146,19 +146,27 @@ class SchemaManager extends \Schema {
 	 * @throws \Exception
 	 */
 	protected static function _fromArray($schema, $context) {
+
+		$ret = new \Schema();
+
 		if (isset($schema['@extends'])) {
 			$extends = $schema['@extends'];
-			if (!is_string($extends) || !class_exists($extends)) {
-				throw new \Exception('class to extend does not exist: ' . echon($extends));
+			if (is_string($extends)) {
+				$extends = array($extends);
 			}
-			if (!\SchemaManager::isRegistered($extends)) {
-				$extends::__init();
+			if (!is_array($extends)) {
+				throw new \Exception('extends definition invalid: ' . echon($extends));
 			}
-			$ret = \SchemaManager::getSchema($extends);
+			foreach ($extends as $eachExtends) {
+				if (!\SchemaManager::isRegistered($eachExtends)) {
+					$eachExtends::__init();
+				}
+				$extendSchema = \SchemaManager::getSchema($eachExtends);
+				foreach ($extendSchema as $eachKey=>$eachField) {
+					$ret->_schema[$eachKey] = $eachField;
+				}
+			}
 			unset($schema['@extends']);
-		}
-		else {
-			$ret = new \Schema();
 		}
 
 		foreach ($schema as $eachKey=>$eachVal) {
