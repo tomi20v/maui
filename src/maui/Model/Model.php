@@ -7,11 +7,6 @@ abstract class Model implements \IteratorAggregate {
 	use \maui\TraitHasLabel;
 
 	/**
-	 * made const so it's easy to get but final
-	 */
-	const REFERRED = \SchemaManager::REF_AUTO;
-
-	/**
 	 * @var array[] initial schema reference. will be unset. To use dynamic schemas override static function __init()
 	 */
 	protected static $_schema = array();
@@ -42,10 +37,9 @@ abstract class Model implements \IteratorAggregate {
 	////////////////////////////////////////////////////////////////////////////////
 
 	public function __construct($idOrData=null, $dataIsOriginal=false) {
-		$classname = get_called_class();
-		if (!\ModelManager::isInited($classname)) {
-			static::__init();
-		}
+
+		static::__init();
+
 		if (is_array($idOrData)) {
 			$this->apply($idOrData, $dataIsOriginal);
 		}
@@ -66,20 +60,15 @@ abstract class Model implements \IteratorAggregate {
 				$this->field(\SchemaManager::KEY_ID, $id);
 			}
 		}
+
 	}
 
 	public function __get($key) {
-		if ($this->hasField($key)) {
-			return $this->field($key);
-		}
-		throw new \Exception(echon($key));
+		return $this->field($key);
 	}
 
 	public function __set($key, $val) {
-		if ($this->hasField($key)) {
-			return $this->field($key, $val);
-		}
-		throw new \Exception(echon($key) . echon($val));
+		return $this->field($key, $val);
 	}
 
 	/**
@@ -87,6 +76,9 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public static function __init() {
 		$classname = get_called_class();
+		if (static::$_schema === true) {
+			return;
+		}
 		if (empty(static::$_schema)) {
 			throw new \Exception('schema must not be empty, saw empty in ' . $classname);
 		}
@@ -94,7 +86,7 @@ abstract class Model implements \IteratorAggregate {
 			$classname,
 			\SchemaManager::ensureHasId(static::$_schema)
 		);
-		static::$_schema = null;
+		static::$_schema = true;
 		\ModelManager::registerInited($classname);
 	}
 
@@ -103,15 +95,23 @@ abstract class Model implements \IteratorAggregate {
 	 * @return \ArrayIterator|\Traversable
 	 */
 	public function getIterator() {
-		return new \ArrayIterator($this->_getSchema());
+		return new \ArrayIterator(static::_getSchema());
 	}
 
-	protected function _getSchema() {
-		return \SchemaManager::getSchema($this);
+	/**
+	 * @return \Schema I return my schema and cache in static. Also call __init() if necessary
+	 */
+	protected static function _getSchema() {
+		static $Schema;
+		if (is_null($Schema)) {
+			static::__init();
+			$Schema = \SchemaManager::getSchema(get_called_class());
+		}
+		return $Schema;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
-	//	CRUD etc
+	//	collection
 	////////////////////////////////////////////////////////////////////////////////
 
 	/**
@@ -160,6 +160,10 @@ abstract class Model implements \IteratorAggregate {
 		}
 		return $collectionClassname;
 	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	//	CRUD etc
+	////////////////////////////////////////////////////////////////////////////////
 
 	/**
 	 * @param mixed[] $loadData prepared data example to load by
@@ -252,32 +256,36 @@ abstract class Model implements \IteratorAggregate {
 	 * @throws \Exception
 	 */
 	public function save($fieldsOrDeepsave=true, &$excludedObjectIds=array()) {
+
 		$DbCollection = static::_getDbCollection();
 		// do deep validation and save
-		if ($fieldsOrDeepsave === true) {
+		switch (true) {
+		case ($fieldsOrDeepsave === true):
 			// first save referenced relatives
-			// @todo - implement deep save...
-			// @todo validation??
-			throw new \Exception('TBI');
-//			$relatives = $this->_getReferencedRelatives();
+			$objectHash = spl_object_hash($this);
+			if (in_array($objectHash, $excludedObjectIds)) {
+				continue;
+			}
+			$excludedObjectIds[] = $objectHash;
+//			$relatives = $this->_relatives(\ModelManager::DATA_ALL);
 //			foreach ($relatives as $EachRelative) {
+//				//echop($EachRelative);
 //				$EachRelative->save(true, $excludedObjectIds);
 //			}
-			// save only if there is actual data
-//			if (!empty($this->_data)) {
-//				$data = $this->getData(\ModelManager::DATA_ALL);
-//				$result = $DbCollection->save(
-//					$data
-//				);
-//				if (isset($result['ok']) && $result['ok']) {
-//					$this->_originalData = $data;
-//					// @todo save already created relative objects here
-//					$this->_data = array();
-//				}
-//			}
-//			return $result;
-		}
-		elseif ($fieldsOrDeepsave === false) {
+			$Schema = static::_getSchema();
+			foreach ($Schema as $eachKey=>$EachField) {
+				if (($EachField instanceof \SchemaRelative) &&
+					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
+					$Relative = $this->val($eachKey);
+					if (!is_null($Relative)) {
+						$Relative = $this->_relative($eachKey);
+						$Relative->save(true, $excludedObjectIds);
+					}
+				}
+
+			}
+		// FALLTHROUGH
+		case ($fieldsOrDeepsave === false):
 			if (empty($this->_data)) {
 				return $this;
 			}
@@ -285,7 +293,15 @@ abstract class Model implements \IteratorAggregate {
 			if (!$this->validate(false)) {
 				return null;
 			}
-			$data = $this->getData(\ModelManager::DATA_CHANGED);
+
+			$whichData = \ModelManager::DATA_ALL;
+			if (is_array($fieldsOrDeepsave)) {
+				$whichData = $fieldsOrDeepsave;
+			}
+			elseif ($fieldsOrDeepsave === false) {
+				$whichData = \ModelManager::DATA_CHANGED;
+			}
+			$data = $this->getData($whichData);
 #			return $data;
 			if ($this->_id) {
 				$result = $DbCollection->update(
@@ -294,6 +310,9 @@ abstract class Model implements \IteratorAggregate {
 				);
 			}
 			else {
+				if (empty($data)) {
+					return null;
+				}
 				$result = $DbCollection->save(
 					$data
 				);
@@ -306,8 +325,7 @@ abstract class Model implements \IteratorAggregate {
 			}
 			// I might want to save return value?
 			return $result;
-		}
-		elseif (is_array($fieldsOrDeepsave)) {
+		case is_array($fieldsOrDeepsave):
 			throw new \Exception('TBI');
 		}
 		return null;
@@ -318,19 +336,23 @@ abstract class Model implements \IteratorAggregate {
 	 * I call myself recursively for relative objects so I am safe being protected
 	 */
 	protected function _beforeSave() {
-		$Schema = $this->_getSchema();
+		$Schema = static::_getSchema();
 		foreach ($Schema as $eachKey=>$EachField) {
-			$eachVal = $this->field($eachKey);
 			if ($EachField instanceof \SchemaAttr) {
 				$EachField->beforeSave($eachKey, $this);
 			}
 			elseif (!empty($eachVal)) {
-				if ($eachVal instanceof \Collection) {
+				$eachVal = is_null($this->val($eachKey)) ? null : $this->_relative($eachKey);
+				if (is_null($eachVal));
+				elseif ($eachVal instanceof \Collection) {
 					foreach ($eachVal as $EachObject) {
 						$EachObject->_beforeSave();
 					}
 				}
 				else {
+					if(!is_object($eachVal)) {
+						echop($this); echop($eachKey); echop($eachVal); debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die;
+					}
 					$eachVal->_beforeSave();
 				}
 			}
@@ -393,7 +415,7 @@ abstract class Model implements \IteratorAggregate {
 		}
 		// ->data($key) returns value of field on key $key
 		elseif (($num == 1) && is_string($keyOrData)) {
-			return $this->$keyOrData;
+			return $this->val($keyOrData, \ModelManager::DATA_ALL);
 		}
 		// ->data(array(...)) sets data
 		elseif (($num == 1) && is_array($keyOrData)) {
@@ -419,7 +441,7 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public function getData($whichData, $returnFields = null) {
 		$data = array();
-		$Schema = $this->_getSchema();
+		$Schema = static::_getSchema();
 		foreach($Schema as $eachKey=>$EachField) {
 			if (is_array($returnFields) && !isset($returnFields[$eachKey])) {
 				continue;
@@ -427,11 +449,13 @@ abstract class Model implements \IteratorAggregate {
 			// if I have this property set according to $whichData?
 			if ((($whichData === \ModelManager::DATA_CHANGED) || ($whichData === \ModelManager::DATA_ALL)) &&
 				array_key_exists($eachKey, $this->_data)) {
-				$eachVal = $this->field($eachKey);
+//				$eachVal = $this->field($eachKey);
+				$eachVal = $this->val($eachKey, $whichData);
 			}
 			elseif ((($whichData === \ModelManager::DATA_ORIGINAL) || ($whichData === \ModelManager::DATA_ALL)) &&
 				array_key_exists($eachKey, $this->_originalData)) {
-				$eachVal = $this->originalField($eachKey, false);
+//				$eachVal = $this->originalField($eachKey, false);
+				$eachVal = $this->val($eachKey, $whichData);
 			}
 			else {
 				continue;
@@ -443,6 +467,9 @@ abstract class Model implements \IteratorAggregate {
 			}
 			// if a relative, get its data through the relation object
 			elseif ($this->hasRelative($eachKey)) {
+				if (is_null($eachVal)) {
+					$data[$eachKey] = $eachVal;
+				}
 				if (is_array($eachVal) && empty($eachVal[\SchemaManager::KEY_ID])) {
 					$data[$eachKey] = $eachVal;
 				}
@@ -461,12 +488,13 @@ abstract class Model implements \IteratorAggregate {
 	 * @param string $key
 	 * @return bool
 	 */
-	public function hasField($key) {
-		return $this->_getSchema()->hasField($key);
+	public static function hasField($key) {
+		return static::_getSchema()->hasField($key);
 	}
 
 	/**
-	 * I set or get a field. Indeed I just wrap attr() and relative() methods
+	 * I set or get a field. I always return an object for relatives. Magics wrap me.
+	 * internally, I just wrap attr() and relative() methods
 	 * @param string $key field name to set or get
 	 * @param null|mixed $val if present, field will be set, otherwise just returned
 	 * @return $this|Model|null I return $this on set, or mixed for get. Note:
@@ -475,7 +503,7 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public function field($key, $val=null) {
 		if (!$this->hasField($key)) {
-			throw new \Exception('field ' . $key . ' does not exists');
+			throw new \Exception('field ' . $key . ' does not exists in class ' . get_class($this));
 		}
 		if (func_num_args() == 1) {
 			if ($this->hasAttr($key)) {
@@ -492,6 +520,32 @@ abstract class Model implements \IteratorAggregate {
 			elseif ($this->hasRelative($key)) {
 				return $this->_relative($key, $val);
 			}
+		}
+		return null;
+	}
+
+	/**
+	 * I return a current value (don't create relative object if not set)
+	 * @param $key
+	 * @param null $whichData
+	 * @return $this|array|Model|null
+	 */
+	public function val($key, $whichData=null) {
+		if (is_null($whichData)) {
+			$whichData = \ModelManager::DATA_ALL;
+		}
+		switch (true) {
+			case $whichData === \ModelManager::DATA_CHANGED:
+			case $whichData === \ModelManager::DATA_ALL:
+				if (array_key_exists($key, $this->_data) && !is_null($this->_data[$key])) {
+					return $this->_data[$key];
+				}
+			// @FALLTHROUGH
+			case $whichData === \ModelManager::DATA_ORIGINAL:
+				if (array_key_exists($key, $this->_originalData) && !is_null($this->_originalData[$key])) {
+					return $this->_originalData[$key];
+				}
+				break;
 		}
 		return null;
 	}
@@ -525,7 +579,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @return bool
 	 */
 	public function hasAttr($key) {
-		return $this->_getSchema()->hasAttr($key);
+		return static::_getSchema()->hasAttr($key);
 	}
 
 	/**
@@ -559,7 +613,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @return bool
 	 */
 	public function hasRelative($key) {
-		return $this->_getSchema()->hasRelative($key);
+		return static::_getSchema()->hasRelative($key);
 	}
 
 	/**
@@ -568,42 +622,61 @@ abstract class Model implements \IteratorAggregate {
 	 * @param $key
 	 * @param $this|mixed $value
 	 */
-	public function _relative($key, $val=null) {
+	protected function _relative($key, $val=null) {
 		$ret = null;
 		if (count(func_get_args()) == 1) {
 			if (!array_key_exists($key, $this->_data) && array_key_exists($key, $this->_originalData)) {
-				$this->_data[$key] = $this->_originalData[$key];
+				// @todo I should implement deep cloning
+				$this->_data[$key] = clone $this->_originalData[$key];
 			}
 			if (array_key_exists($key, $this->_data)) {
 				$ret = $this->_data[$key];
 				if (is_object($ret) && !($ret instanceof \MongoId));
 				else {
-					$Rel = $this->_getSchema()->field($key);
+					$Rel = static::_getSchema()->field($key);
 					$ret = $Rel->getReferredObject($this->_data[$key]);
 					$this->_data[$key] = $ret;
 				}
 			}
 		}
 		else {
+			$Rel = static::_getSchema()->field($key);
+			$classname = $Rel->getObjectClassname();
 			if ($val instanceof \Model) {
-				$Rel = $this->_getSchema()->field($key);
-				$classname = $Rel->getObjectClassname();
 				if (!$val instanceof $classname) {
-					throw new \Exception(echon($key) . ' / ' . echon($val));
+					throw new \Exception('cannot set ' . echon($val) . ' for field ' . echon($key) . ' as it is not subclass of ' . echon($classname));
 				}
 			}
 			elseif ($val instanceof \Collection) {
-				$Rel = $this->_getSchema()->field($key);
-				$classname = $Rel->getObjectClassname();
+				if (!$Rel->isMulti()) {
+					throw new \Exception('cannot set collection for field ' . echon($key) . ' as is not multi');
+				}
 				$collectionClassname = $classname::getCollectionName();
 				if (!$val instanceof $collectionClassname) {
-					throw new \Exception(echon($key) . ' / ' . echon($val));
+					throw new \Exception('cannot set collection ' . echon($val) . ' for field ' . echon($key) . ' as it is not subclass of ' . echon($classname));
 				}
 			}
 			$this->_data[$key] = $val;
 			$ret = $this;
 		}
 		return $ret;
+	}
+
+	/**
+	 * @return array[Model|Collection] I return all existing relative objects
+	 */
+	protected function _relatives($whichData) {
+		$Relatives = array();
+		$Schema = static::_getSchema();
+		foreach($Schema as $eachKey=>$EachField) {
+			if ($EachField instanceof \SchemaRelative) {
+				$Relative = $this->val($eachKey);
+				if (is_object($Relative)) {
+					$Relatives[] = $Relative;
+				}
+			}
+		}
+		return $Relatives;
 	}
 
 	/**
@@ -670,12 +743,13 @@ abstract class Model implements \IteratorAggregate {
 			case $key === false:
 				$this->_isValidated = array(true=>false, false=>false);
 				$this->_validationErrors = array();
-				$Schema = $this->_getSchema();
+				$Schema = static::_getSchema();
 				foreach ($Schema as $eachKey=>$EachField) {
 					if (!$key && !array_key_exists($eachKey, $this->_data)) {
 						continue;
 					}
-					$eachVal = $this->$eachKey;
+//					$eachVal = $this->$eachKey;
+					$eachVal = $this->val($eachKey);
 					$errors = $EachField->getErrors($eachVal, $key ? $this : null);
 					if (!empty($errors)) {
 						$this->_validationErrors[$eachKey] = $errors;
@@ -691,7 +765,7 @@ abstract class Model implements \IteratorAggregate {
 					unset($this->_validationErrors[$eachKey]);
 					unset($this->_isValidated[$eachKey]);
 					$eachVal = $this->$eachKey;
-					$errors = $this->_getSchema()->field($eachKey)->getErrors($eachVal);
+					$errors = static::_getSchema()->field($eachKey)->getErrors($eachVal);
 					if (!empty($errors)) {
 						$this->_validationErrors[$eachKey] = $errors;
 					}
