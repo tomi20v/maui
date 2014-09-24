@@ -428,7 +428,7 @@ class ModelTest extends \maui\TestCase {
 		$P->setAccessible(true);
 		$Q = new \ReflectionProperty($this->Video, '_validationErrors');
 		$Q->setAccessible(true);
-		$this->assertCount(16, $P->getValue($this->Video));
+		$this->assertCount(14, $P->getValue($this->Video));
 
 		$this->assertEquals(array('title','subtitle','length'), array_keys($Q->getValue($this->Video)));
 
