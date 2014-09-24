@@ -17,7 +17,7 @@ class SchemaValidatorDomainName extends \SchemaValidator {
 		return 'is not domain name: ' . $this->_value;
 	}
 
-	public function apply($val, $Model=null) {
+	public function apply(&$val, $Model=null) {
 		return is_string($val) ? $val : null;
 	}
 

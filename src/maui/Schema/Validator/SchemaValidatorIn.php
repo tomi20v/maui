@@ -26,7 +26,7 @@ class SchemaValidatorIn extends \SchemaValidator {
 		return 'not in {' . implode(', ', $this->_value) . '}';
 	}
 
-	public function apply($val, $Model=null) {
+	public function apply(&$val, $Model=null) {
  		return is_scalar($val) || is_array($val) ? $val : null;
 	}
 
