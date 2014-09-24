@@ -626,7 +626,8 @@ abstract class Model implements \IteratorAggregate {
 		$ret = null;
 		if (count(func_get_args()) == 1) {
 			if (!array_key_exists($key, $this->_data) && array_key_exists($key, $this->_originalData)) {
-				$this->_data[$key] = $this->_originalData[$key];
+				// @todo I should implement deep cloning
+				$this->_data[$key] = clone $this->_originalData[$key];
 			}
 			if (array_key_exists($key, $this->_data)) {
 				$ret = $this->_data[$key];
