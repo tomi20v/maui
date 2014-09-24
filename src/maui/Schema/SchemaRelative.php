@@ -241,4 +241,8 @@ class SchemaRelative {
 		return $this->_class;
 	}
 
+	public function getReference() {
+		return $this->_reference;
+	}
+
 }
