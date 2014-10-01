@@ -41,7 +41,7 @@ abstract class Model implements \IteratorAggregate {
 		static::__init();
 
 		if (is_array($idOrData)) {
-			$this->apply($idOrData, $dataIsOriginal);
+			$this->apply($idOrData, true, $dataIsOriginal ? \ModelManager::DATA_ORIGINAL : \ModelManager::DATA_CHANGED);
 		}
 		elseif (is_object($idOrData) && $idOrData instanceof \MongoId) {
 			if ($dataIsOriginal) {
@@ -420,7 +420,7 @@ abstract class Model implements \IteratorAggregate {
 				$data = $this->_originalData;
 				break;
 			case \ModelManager::DATA_ALL:
-				$data = $this->_originalData + $this->_data;
+				$data = $this->_data + $this->_originalData;
 				break;
 			}
 			if (is_array($keys)) {
@@ -476,7 +476,7 @@ abstract class Model implements \IteratorAggregate {
 					continue;
 				}
 				foreach ($eachData as $eachDataKey=>$eachDataVal) {
-					$eachData[$eachKey] = static::_flatData($eachDataVal, $whichData);
+					$eachData[$eachDataKey] = static::_flatData($eachDataVal, $whichData);
 				}
 				$data[$eachKey] = $eachData;
 			}

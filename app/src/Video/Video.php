@@ -3,7 +3,7 @@
 class Video extends \Model {
 
 	protected static $_schema = array(
-		'user' => array(
+		'User' => array(
 			'class' => 'User',
 			'referredField' => 'name',
 			'reference' => \SchemaManager::REF_REFERENCE,
@@ -33,11 +33,11 @@ class Video extends \Model {
 			'minValue' => 1,
 			'maxValue' => 600,
 		),
-		'director' => array(
+		'Director' => array(
 			'class' => 'Staff',
 			'reference' => \SchemaManager::REF_REFERENCE,
 		),
-		'staff' => array(
+		'Staff' => array(
 			'label' => 'Cast',
 			'class' => 'Staff',
 			'reference' => \SchemaManager::REF_INLINE,
