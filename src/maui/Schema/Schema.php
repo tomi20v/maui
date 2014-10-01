@@ -68,6 +68,20 @@ class Schema implements \IteratorAggregate {
 	}
 
 	/**
+	 * I return all field names which are relatives
+	 * @return string[] field names
+	 */
+	public function relatives() {
+		$relatives = array();
+		foreach ($this->_schema as $eachKey=>$eachVal) {
+			if ($this->hasRelative($eachKey)) {
+				$relatives[] = $eachKey;
+			}
+		}
+		return $relatives;
+	}
+
+	/**
 	 * I return validators for a field
 	 * @param $key
 	 * @return \SchemaValidator[]

@@ -152,7 +152,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public function contains($ModelOrData) {
 		$data = $ModelOrData instanceof \Model
-			? $ModelOrData->getData(\ModelManager::DATA_ALL)
+			? $ModelOrData->getData(true, \ModelManager::DATA_ALL, true)
 			: $ModelOrData;
 		foreach ($this->_data as $eachModel) {
 			if (\Model::match($eachModel, $data)) {
@@ -249,11 +249,11 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 *@param bool $whichData just to pass by to children
 	 * @return array
 	 */
-	public function getData($whichData = true) {
+	public function getData($whichData = true, $asIs=true) {
 		$data = array();
 		foreach ($this->_data as $eachKey=>$eachVal) {
 			$data[$eachKey] = $eachVal instanceof \Model
-				? $eachVal->getData($whichData)
+				? $eachVal->getData(true, $whichData, $asIs)
 				: $eachVal;
 		}
 		return $data;

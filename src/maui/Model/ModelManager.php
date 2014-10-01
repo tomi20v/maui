@@ -28,11 +28,6 @@ class ModelManager extends \Model {
 	protected static $_modelPool = array();
 
 	/**
-	 * @var array[string][string] I hold model data keyed by classname (first) and ID (second index)
-	 */
-	protected static $_modelData = array();
-
-	/**
 	 * I tell if class has been inited already
 	 * @param string $classname
 	 * @return bool
@@ -48,7 +43,6 @@ class ModelManager extends \Model {
 	public static function registerInited($classname) {
 		self::$_initedClasses[] = $classname;
 		self::$_modelPool[$classname] = array();
-		self::$_modelData[$classname] = array();
 	}
 
 	/**
@@ -83,12 +77,12 @@ class ModelManager extends \Model {
 		else {
 			if (is_array($m1));
 			elseif ($m1 instanceof \Model) {
-				$m1 = $m1->getData(\ModelManager::DATA_ALL);
+				$m1 = $m1->getData(true, \ModelManager::DATA_ALL, true);
 			}
 			else return null;
 			if (is_array($m2));
 			elseif ($m2 instanceof \Model) {
-				$m2 = $m2->getData(\ModelManager::DATA_ALL);
+				$m2 = $m2->getData(true, \ModelManager::DATA_ALL, true);
 			}
 			else return null;
 			foreach ($m1 as $eachKey=>$eachVal1) {

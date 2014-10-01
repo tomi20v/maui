@@ -245,4 +245,37 @@ class SchemaRelative {
 		return $this->_reference;
 	}
 
+	/**
+	 * @return bool I return true if current field stores multiple values
+	 */
+	public function isMulti() {
+		return ($this->_hasMax === 0) || ($this->_hasMin > 1) || ($this->_hasMax > 1);
+	}
+
+	public function checkVal($val, $key='') {
+
+		$classname = $this->_class;
+
+		// a scalar should be able to be set and used as ID later. still, it might be invalid.
+		if (is_scalar($val));
+		elseif (is_array($val));
+		elseif ($val instanceof \Model) {
+			if (!$val instanceof $classname) {
+				throw new \Exception('cannot set ' . echon($val) . ' for field ' . echon($key) . ' as it is not subclass of ' . echon($classname));
+			}
+		}
+		elseif ($val instanceof \Collection) {
+			if (!$this->isMulti()) {
+				throw new \Exception('cannot set collection for field ' . echon($key) . ' as is not multi');
+			}
+			$collectionClassname = $classname::getCollectionName();
+			if (!$val instanceof $collectionClassname) {
+				throw new \Exception('cannot set collection ' . echon($val) . ' for field ' . echon($key) . ' as it is not subclass of ' . echon($classname));
+			}
+		}
+
+		return true;
+
+	}
+
 }

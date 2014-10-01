@@ -75,19 +75,25 @@ abstract class Model implements \IteratorAggregate {
 	 * I must be called before anything (__construct() does it)
 	 */
 	public static function __init() {
-		$classname = get_called_class();
+
 		if (static::$_schema === true) {
 			return;
 		}
+
+		$classname = get_called_class();
+
 		if (empty(static::$_schema)) {
 			throw new \Exception('schema must not be empty, saw empty in ' . $classname);
 		}
+
 		\SchemaManager::registerSchema(
 			$classname,
 			\SchemaManager::ensureHasId(static::$_schema)
 		);
+
 		static::$_schema = true;
 		\ModelManager::registerInited($classname);
+
 	}
 
 	/**
@@ -199,7 +205,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @param bool $loadEmpty if true, I will load even if data to select is empty
 	 * @return $this
 	 */
-	public function load($loadEmpty=false) {
+	public function OBSload($loadEmpty=false) {
 		$Collection = static::_getDbCollection();
 		$loadData = $this->getData(\ModelManager::DATA_ALL);
 		if (!$loadEmpty && empty($loadData)) {
@@ -216,7 +222,7 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * I load _originalData by original data. Won't touch actual data in _data
 	 */
-	public function loadOriginalData() {
+	public function OBSloadOriginalData() {
 		$Collection = static::_getDbCollection();
 		$findData = $this->getData(\ModelManager::DATA_ORIGINAL);
 		if (empty($findData)) {
@@ -255,7 +261,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @return $this|null - to be clarified
 	 * @throws \Exception
 	 */
-	public function save($fieldsOrDeepsave=true, &$excludedObjectIds=array()) {
+	public function OBSsave($fieldsOrDeepsave=true, &$excludedObjectIds=array()) {
 
 		$DbCollection = static::_getDbCollection();
 		// do deep validation and save
@@ -267,11 +273,7 @@ abstract class Model implements \IteratorAggregate {
 				continue;
 			}
 			$excludedObjectIds[] = $objectHash;
-//			$relatives = $this->_relatives(\ModelManager::DATA_ALL);
-//			foreach ($relatives as $EachRelative) {
-//				//echop($EachRelative);
-//				$EachRelative->save(true, $excludedObjectIds);
-//			}
+
 			$Schema = static::_getSchema();
 			foreach ($Schema as $eachKey=>$EachField) {
 				if (($EachField instanceof \SchemaRelative) &&
@@ -335,7 +337,7 @@ abstract class Model implements \IteratorAggregate {
 	 * I will be called before save's validation (so if it sets a value, it must be valid)
 	 * I call myself recursively for relative objects so I am safe being protected
 	 */
-	protected function _beforeSave() {
+	protected function OBS_beforeSave() {
 		$Schema = static::_getSchema();
 		foreach ($Schema as $eachKey=>$EachField) {
 			if ($EachField instanceof \SchemaAttr) {
@@ -372,10 +374,10 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public static function match($modelData, $data) {
 		if ($modelData instanceof \Model) {
-			$modelData = $modelData->getData(\ModelManager::DATA_ALL);
+			$modelData = $modelData->getData(true, \ModelManager::DATA_ALL, true);
 		}
 		if ($data instanceof \Model) {
-			$data = $data->getData(\ModelManager::DATA_ALL);
+			$data = $data->getData(true, \ModelManager::DATA_ALL, true);
 		}
 		if (!is_array($modelData) || !is_array($data)) {
 			return null;
@@ -401,85 +403,87 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * I wrap data getter methods, see code for examples
-	 *
-	 * @param null|string|array $keyOrData
-	 * @param null|mixed|boolean $valOrWhichData
-	 * @return array|mixed|null
+	 * I return array representation of current data state
+	 * @param array|bool $keys field keys to return, true to return all. still, I will return only fields which are set
+	 * @param int $whichData as in ModelManager
+	 * @param bool $asIs if true, data is returned as is. If false, relatives will be constructed from existing data
+	 * @return array|null
 	 */
-	public function data($keyOrData=null, $valOrWhichData=null) {
-	 	$num = func_num_args();
-		// ->data() returns actual data array
-		if (is_null($keyOrData) && is_null($valOrWhichData)) {
-			return $this->getData(\ModelManager::DATA_ALL);
+	public function getData($keys=true, $whichData=\ModelManager::DATA_ALL, $asIs=true) {
+
+		if ($asIs) {
+			switch ($whichData) {
+			case \ModelManager::DATA_CHANGED:
+				$data = $this->_data;
+				break;
+			case \ModelManager::DATA_ORIGINAL:
+				$data = $this->_originalData;
+				break;
+			case \ModelManager::DATA_ALL:
+				$data = $this->_originalData + $this->_data;
+				break;
+			}
+			if (is_array($keys)) {
+				$data = array_intersect_key($data, array_flip($keys));
+			}
+			return $data;
 		}
-		// ->data($key) returns value of field on key $key
-		elseif (($num == 1) && is_string($keyOrData)) {
-			return $this->val($keyOrData, \ModelManager::DATA_ALL);
+
+		$data = array();
+		$Schema = static::_getSchema();
+
+		foreach ($Schema as $eachKey=>$EachField) {
+			$data[$eachKey] = $this->getField($eachKey, $whichData, false);
 		}
-		// ->data(array(...)) sets data
-		elseif (($num == 1) && is_array($keyOrData)) {
-			$this->apply($keyOrData);
-		}
-		// ->data(array(...), true) sets originalData and clears data
-		elseif (($num == 2) && is_array($keyOrData) && ($valOrWhichData===true)) {
-			$this->apply($keyOrData, true);
-		}
-		// ->data($key, $val) sets field $key to $val (can be field or relative)
-		elseif (($num == 2) && is_string($keyOrData)) {
-			$this->$keyOrData = $valOrWhichData;
-		}
-		return null;
+
+		return $data;
+
 	}
 
 	/**
-	 * I return current data representation
-	 *
-	 * @param bool $whichData if true, all data is returned, if false, just the changed fields plus ID, otherwise nothing...
-	 * @param null|string[] send an array of fieldnames to filter data
+	 * I return multidimensional array of just scalar values (models and collections transformed to their array representation)
+	 * @param int $whichData as in ModelManager
 	 * @return array
 	 */
-	public function getData($whichData, $returnFields = null) {
-		$data = array();
-		$Schema = static::_getSchema();
-		foreach($Schema as $eachKey=>$EachField) {
-			if (is_array($returnFields) && !isset($returnFields[$eachKey])) {
-				continue;
-			}
-			// if I have this property set according to $whichData?
-			if ((($whichData === \ModelManager::DATA_CHANGED) || ($whichData === \ModelManager::DATA_ALL)) &&
-				array_key_exists($eachKey, $this->_data)) {
-//				$eachVal = $this->field($eachKey);
-				$eachVal = $this->val($eachKey, $whichData);
-			}
-			elseif ((($whichData === \ModelManager::DATA_ORIGINAL) || ($whichData === \ModelManager::DATA_ALL)) &&
-				array_key_exists($eachKey, $this->_originalData)) {
-//				$eachVal = $this->originalField($eachKey, false);
-				$eachVal = $this->val($eachKey, $whichData);
-			}
-			else {
-				continue;
-			}
-			// if it's an attribute, get applied value
-			if ($this->hasAttr($eachKey)) {
-				$EachField->apply($eachVal, $this);
-				$data[$eachKey] = $eachVal;
-			}
-			// if a relative, get its data through the relation object
-			elseif ($this->hasRelative($eachKey)) {
-				if (is_null($eachVal)) {
-					$data[$eachKey] = $eachVal;
-				}
-				if (is_array($eachVal) && empty($eachVal[\SchemaManager::KEY_ID])) {
-					$data[$eachKey] = $eachVal;
-				}
-				elseif (is_object($eachVal) && empty($eachVal->_id)) {
-					$data[$eachKey] = $eachVal->getData($whichData);
-				}
+	public function flatData($whichData=\ModelManager::DATA_ALL) {
 
+		$data = $this->getData(true, $whichData, true);
+
+		return static::_flatData($data, $whichData);
+
+	}
+
+	/**
+	 * I flatten an array so models and collections are transformed to their array representation
+	 * @param $data
+	 * @param $whichData
+	 * @return array
+	 */
+	protected static function _flatData($data, $whichData) {
+
+		if (is_array($data)) {
+			foreach ($data as $eachKey=>$eachVal) {
+				if ($eachVal instanceof \Collection) {
+					$eachData = $eachVal->flatData($whichData);
+				}
+				elseif ($eachVal instanceof \Model) {
+					$eachData = $eachVal->getData(true, $whichData, true);
+				}
+				elseif (is_array($eachVal)) {
+					$eachData = $eachVal;
+				}
+				else {
+					continue;
+				}
+				foreach ($eachData as $eachDataKey=>$eachDataVal) {
+					$eachData[$eachKey] = static::_flatData($eachDataVal, $whichData);
+				}
+				$data[$eachKey] = $eachData;
 			}
 		}
+
 		return $data;
+
 	}
 
 	/**
@@ -502,75 +506,60 @@ abstract class Model implements \IteratorAggregate {
 	 * @throws \Exception
 	 */
 	public function field($key, $val=null) {
-		if (!$this->hasField($key)) {
-			throw new \Exception('field ' . $key . ' does not exists in class ' . get_class($this));
-		}
 		if (func_num_args() == 1) {
 			if ($this->hasAttr($key)) {
-				return $this->_attr($key);
+				return $this->_getAttr($key, \ModelManager::DATA_ALL, false);
 			}
 			elseif ($this->hasRelative($key)) {
-				return $this->_relative($key);
+				return $this->_getRelative($key, \ModelManager::DATA_ALL, false);
 			}
 		}
 		else {
 			if ($this->hasAttr($key)) {
-				return $this->_attr($key, $val);
+				return $this->_setAttr($key, $val, \ModelManager::DATA_ALL);
 			}
 			elseif ($this->hasRelative($key)) {
-				return $this->_relative($key, $val);
+				return $this->_setRelative($key, $val, \ModelManager::DATA_ALL);
 			}
 		}
-		return null;
+		throw new \Exception('field ' . $key . ' does not exists in class ' . get_class($this));
 	}
 
-	/**
-	 * I return a current value (don't create relative object if not set)
-	 * @param $key
-	 * @param null $whichData
-	 * @return $this|array|Model|null
-	 */
-	public function val($key, $whichData=null) {
-		if (is_null($whichData)) {
-			$whichData = \ModelManager::DATA_ALL;
-		}
-		switch (true) {
-			case $whichData === \ModelManager::DATA_CHANGED:
-			case $whichData === \ModelManager::DATA_ALL:
-				if (array_key_exists($key, $this->_data) && !is_null($this->_data[$key])) {
-					return $this->_data[$key];
-				}
-			// @FALLTHROUGH
-			case $whichData === \ModelManager::DATA_ORIGINAL:
-				if (array_key_exists($key, $this->_originalData) && !is_null($this->_originalData[$key])) {
-					return $this->_originalData[$key];
-				}
-				break;
-		}
-		return null;
-	}
-
-	/**
-	 * I return original data (as loaded or saved) or a field of it
-	 * @param null $key
-	 * @return array|null
-	 */
-	public function originalField($key=null, $allowLoad=true) {
-		if (func_num_args() == 0) {
-			return $this->_originalData;
-		}
-		elseif ($this->hasAttr($key)) {
-			if (!isset($this->_originalData[$key]) && $allowLoad) {
-				$this->load();
-			}
-			return isset($this->_originalData[$key])
-				? $this->_originalData[$key]
-				: null;
+	public function getField($key, $whichData=\ModelManager::DATA_CHANGED, $asIs=false) {
+		if ($this->hasAttr($key)) {
+			return $this->_getAttr($key, $whichData, $asIs);
 		}
 		elseif ($this->hasRelative($key)) {
-			throw new \Exception('TBI');
+			return $this->_getRelative($key, $whichData, $asIs);
 		}
-		throw new \Exception($key);
+	}
+
+	public function setField($key, $val, $whichData=\ModelManager::DATA_CHANGED) {
+		if ($this->hasAttr($key)) {
+			return $this->_setAttr($key, $val, $whichData);
+		}
+		elseif ($this->hasRelative($key)) {
+			return $this->_setRelative($key, $val, $whichData);
+		}
+	}
+
+	/**
+	 * I return if a fields value is set. I do not validate $key param
+	 * @param string $key
+	 * @param int $whichData
+	 * @return bool
+	 * @throws \Exception
+	 */
+	public function fieldIsSet($key, $whichData = \ModelManager::DATA_ALL) {
+		switch($whichData) {
+		case \ModelManager::DATA_CHANGED:
+			return array_key_exists($key, $this->_data);
+		case \ModelManager::DATA_ORIGINAL:
+			return array_key_exists($key, $this->_originalData);
+		case \ModelManager::DATA_ALL:
+			return array_key_exists($key, $this->_data) || array_key_exists($key, $this->_originalData);
+		}
+		throw new \Exception('invalid value (' . echon($whichData) . ' for $whichData in fieldIsSet()');
 	}
 
 	/**
@@ -583,28 +572,41 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * I return or set value on field $key
-	 * @param $key
-	 * @param null $val
-	 * @return $this|null
-	 * @throws \Exception
+	 * I return an attribute
+	 * @param string $key
+	 * @param int $whichData
+	 * @param bool $asIs not used here
+	 * @return null
 	 */
-	protected function _attr($key, $val=null) {
-		if (func_num_args() == 1) {
-			if (array_key_exists($key, $this->_data)) {
-				return $this->_data[$key];
-			}
-			elseif (array_key_exists($key, $this->_originalData)) {
-				return $this->_originalData[$key];
-			}
-			return null;
+	protected function _getAttr($key, $whichData, $asIs) {
+		$val = isset($this->_data[$key]) ? $this->_data[$key] : null;
+		$originalVal = isset($this->_originalData[$key]) ? $this->_originalData[$key] : null;
+		switch ($whichData) {
+		case \ModelManager::DATA_CHANGED:
+			return $val;
+		case \ModelManager::DATA_ORIGINAL:
+			return $originalVal;
+		case \ModelManager::DATA_ALL:
+			return isset($val) ? $val : $originalVal;
 		}
-		else {
-			// note that I do not perform apply() here
+	}
+
+	/**
+	 * @param string $key
+	 * @param mixed $val value to set
+	 * @param int $whichData
+	 */
+	protected function _setAttr($key, $val, $whichData) {
+		switch ($whichData) {
+		case \ModelManager::DATA_CHANGED:
+		case \ModelManager::DATA_ALL:
 			$this->_data[$key] = $val;
-			return $this;
+			break;
+		case \ModelManager::DATA_ORIGINAL:
+			$this->_originalData[$key] = $val;
+			break;
 		}
-		throw new \Exception('TBI');
+		return $this;
 	}
 
 	/**
@@ -663,20 +665,71 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * @return array[Model|Collection] I return all existing relative objects
+	 * @param string $key
+	 * @param int $whichData as in ModelManager::DATA_* constants
+	 * @param bool $asIs get relative value as is (eg. return empty or just mongoId object) or create (and set) proper object
+	 * @return null
 	 */
-	protected function _relatives($whichData) {
-		$Relatives = array();
-		$Schema = static::_getSchema();
-		foreach($Schema as $eachKey=>$EachField) {
-			if ($EachField instanceof \SchemaRelative) {
-				$Relative = $this->val($eachKey);
-				if (is_object($Relative)) {
-					$Relatives[] = $Relative;
-				}
-			}
+	protected function _getRelative($key, $whichData, $asIs) {
+
+		$val = isset($this->_data[$key]) ? $this->_data[$key] : null;
+		$originalVal = isset($this->_originalData[$key]) ? $this->_originalData[$key] : null;
+
+		// $asIs = false - return some meaningful object, create (and set) if necessary
+		// this shall be more savvy
+		switch ($whichData) {
+		case \ModelManager::DATA_CHANGED:
+			$ret = $val;
+			break;
+		case \ModelManager::DATA_ORIGINAL:
+			$ret = $val;
+			break;
+		case \ModelManager::DATA_ALL:
+			$ret = isset($val) ? $val : $originalVal;
+			break;
 		}
-		return $Relatives;
+
+		if ($asIs);
+		elseif (is_object($ret) && !($ret instanceof \MongoId));
+		else {
+
+			$Rel = static::_getSchema()->field($key);
+			$ret = $Rel->getReferredObject($ret);
+
+			switch ($whichData) {
+			case \ModelManager::DATA_CHANGED:
+			case \ModelManager::DATA_ALL:
+				$this->_data[$key] = $ret;
+				break;
+			case \ModelManager::DATA_ORIGINAL:
+				$this->_originalData[$key] = $ret;
+				break;
+			}
+
+		}
+
+		return $ret;
+
+	}
+
+	protected function _setRelative($key, $val, $whichData) {
+
+		$Rel = static::_getSchema()->field($key);
+
+		$Rel->checkVal($val);
+
+		switch ($whichData) {
+		case \ModelManager::DATA_CHANGED:
+		case \ModelManager::DATA_ALL:
+			$this->_data[$key] = $val;
+			break;
+		case \ModelManager::DATA_ORIGINAL:
+			$this->_originalData[$key] = $val;
+			break;
+		}
+
+		return $this;
+
 	}
 
 	/**
@@ -687,7 +740,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @return $this
 	 * @throws \Exception
 	 */
-	public function apply($data, $dataIsOriginal=false) {
+	public function OBSapply($data, $dataIsOriginal=false) {
 		if (!is_array($data)) {
 			throw new \Exception(echon($data));
 		}
@@ -701,6 +754,43 @@ abstract class Model implements \IteratorAggregate {
 			}
 		}
 		return $this;
+	}
+
+	/**
+	 * I set or merge data
+	 * @param mixed[] $data
+	 * @param bool $overWrite if true, $data is set as data erasing old, otherwise they're merged
+	 * @param int $whichData as in ModelManager constants
+	 * @return $this
+	 * @throws \Exception
+	 */
+	public function apply($data, $overWrite=false, $whichData=\ModelManager::DATA_CHANGED) {
+
+		if (!is_array($data)) {
+			throw new \Exception('can apply only an array of data, got: ' . echon($data));
+		}
+
+		switch ($whichData) {
+		case \ModelManager::DATA_ORIGINAL:
+			$dataStore = &$this->_originalData;
+			break;
+		case \ModelManager::DATA_CHANGED:
+		case \ModelManager::DATA_ALL:
+			$dataStore = &$this->_data;
+			break;
+		}
+
+		if ($overWrite) {
+			$dataStore = $data;
+		}
+		else {
+			foreach ($data as $eachKey=>$eachVal) {
+				$this->setField($eachKey, $eachVal, $whichData);
+			}
+		}
+
+		return $this;
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -748,8 +838,7 @@ abstract class Model implements \IteratorAggregate {
 					if (!$key && !array_key_exists($eachKey, $this->_data)) {
 						continue;
 					}
-//					$eachVal = $this->$eachKey;
-					$eachVal = $this->val($eachKey);
+					$eachVal = $this->getField($eachKey, \ModelManager::DATA_ALL, true);
 					$errors = $EachField->getErrors($eachVal, $key ? $this : null);
 					if (!empty($errors)) {
 						$this->_validationErrors[$eachKey] = $errors;
@@ -781,7 +870,6 @@ abstract class Model implements \IteratorAggregate {
 				return count(array_intersect_key($this->_validationErrors, array_flip($key))) ? false : true;
 				break;
 			case $this->hasField($key):
-			case $this->hasRelative($key):
 				return $this->validate(array($key));
 			default:
 				throw new \Exception('cannot validate non existing field def: ' . echon($key));
@@ -808,7 +896,6 @@ abstract class Model implements \IteratorAggregate {
 				}
 				return array_intersect_key($this->_validationErrors, array_flip($key));
 			case $this->hasField($key):
-			case $this->hasRelative($key):
 				return $this->getErrors(array($key));
 			default:
 				throw new \Exception('cannot get error for non existing field def: ' . echon($key));;
