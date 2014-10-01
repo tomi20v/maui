@@ -127,8 +127,9 @@ abstract class Model implements \IteratorAggregate {
 	protected static function _getDbCollection() {
 		static $_DbCollection;
 		if (is_null($_DbCollection)) {
-			$collectionClassname = static::getCollectionClassname();
-			$dbCollectionName = $collectionClassname::getDbCollectionName(get_called_class());
+//			$collectionClassname = static::getCollectionClassname();
+//			$dbCollectionName = $collectionClassname::getDbCollectionName(get_called_class());
+			$dbCollectionName = static::getDbCollectionName();
 			$_DbCollection = \Maui::instance()->dbDb()->$dbCollectionName;
 		}
 		return $_DbCollection;
@@ -165,6 +166,10 @@ abstract class Model implements \IteratorAggregate {
 				: $parentClassname::getCollectionClassname();
 		}
 		return $collectionClassname;
+	}
+
+	public static function getDbCollectionName() {
+		return 'Collection';
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -334,6 +339,95 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
+	 * I save myself
+	 * @param bool $deep if true, relatives save will be triggered as well
+	 * @param null $whichData as in ModelManager. Default depends on $deep, see code
+	 * @return bool true on success
+	 */
+	public function save($deep=true, $whichData=null, &$excludedObjectIds=array()) {
+		if (is_null($whichData)) {
+			$whichData = $deep ? \ModelManager::DATA_ALL : \ModelManager::DATA_CHANGED;
+		}
+		return $this->_save($deep, $whichData, $excludedObjectIds);
+	}
+
+	/**
+	 * inner save method
+	 * @param bool $deep
+	 * @param $whichData
+	 * @param $excludedObjectIds
+	 * @return bool
+	 */
+	protected function _save($deep, $whichData, &$excludedObjectIds) {
+
+		if ($deep) {
+			$objectHash = spl_object_hash($this);
+			if (in_array($objectHash, $excludedObjectIds)) {
+				return;
+			}
+			$excludedObjectIds[] = $objectHash;
+			$Schema = static::_getSchema();
+			foreach ($Schema as $eachKey=>$EachField) {
+				if (($EachField instanceof \SchemaRelative) &&
+					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
+//					$Relative = $this->val($eachKey);
+					$Relative = $this->_getRelative($eachKey, \ModelManager::DATA_ALL, true);
+					if (!is_null($Relative)) {
+						$Relative = $this->_relative($eachKey);
+						$Relative->save($whichData, true, $excludedObjectIds);
+					}
+				}
+
+			}
+		}
+
+		if (($whichData === \ModelManager::DATA_CHANGED) && empty($this->_data)) {
+			return null;
+		}
+
+		$this->_beforeSave();
+
+		if (!$this->validate(false)) {
+			return false;
+		}
+
+		$data = $this->flatData($whichData, false);
+		$DbCollection = static::_getDbCollection();
+
+		if ($this->_id) {
+			$result = $DbCollection->update(
+				array(\SchemaManager::KEY_ID => $this->_id),
+				array('$set' => $data)
+			);
+		}
+		else {
+			if (empty($data)) {
+				return null;
+			}
+			$result = $DbCollection->save(
+				$data
+			);
+		}
+
+		if (isset($result['ok']) && $result['ok']) {
+			foreach ($data as $eachKey=>$eachVal) {
+				$this->_originalData[$eachKey] = $eachVal;
+				unset($this->_data[$eachKey]);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * I save just certain fields from a model for faster updates
+	 * @param string[] $fields to save
+	 */
+	public function saveFields($fields) {
+
+	}
+
+	/**
 	 * I will be called before save's validation (so if it sets a value, it must be valid)
 	 * I call myself recursively for relative objects so I am safe being protected
 	 */
@@ -344,7 +438,8 @@ abstract class Model implements \IteratorAggregate {
 				$EachField->beforeSave($eachKey, $this);
 			}
 			elseif (!empty($eachVal)) {
-				$eachVal = is_null($this->val($eachKey)) ? null : $this->_relative($eachKey);
+//				$eachVal = is_null($this->val($eachKey)) ? null : $this->_relative($eachKey);
+				$eachVal = is_null($this->val($eachKey)) ? null : $this->_getRelative($eachKey, \ModelManager::DATA_ALL, false);
 				if (is_null($eachVal));
 				elseif ($eachVal instanceof \Collection) {
 					foreach ($eachVal as $EachObject) {
@@ -359,6 +454,10 @@ abstract class Model implements \IteratorAggregate {
 				}
 			}
 		}
+	}
+
+	protected function _beforeSave() {
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -422,6 +521,8 @@ abstract class Model implements \IteratorAggregate {
 			case \ModelManager::DATA_ALL:
 				$data = $this->_data + $this->_originalData;
 				break;
+			default:
+				throw new \Exception('invalid value for $whichData: ' . echon($whichData));
 			}
 			if (is_array($keys)) {
 				$data = array_intersect_key($data, array_flip($keys));
@@ -443,11 +544,30 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * I return multidimensional array of just scalar values (models and collections transformed to their array representation)
 	 * @param int $whichData as in ModelManager
+	 * @param bool if true, recursive data (referenced relatives) will be included recursively. Otherwise just self attributes (for saving)
 	 * @return array
 	 */
-	public function flatData($whichData=\ModelManager::DATA_ALL) {
+	public function flatData($whichData=\ModelManager::DATA_ALL, $deep=true) {
 
 		$data = $this->getData(true, $whichData, true);
+
+		if (!$deep) {
+			$Schema = static::_getSchema();
+			foreach ($data as $eachKey=>$eachVal) {
+				if (!$Schema->hasRelative($eachKey)) {
+					continue;
+				}
+				$Rel = $Schema->getRelative($eachKey);
+				if ($Rel->getReference() == \SchemaManager::REF_REFERENCE) {
+					// note this cannot be unset as then a saved field could never be overwritten with empty (null) value
+					if (is_null($eachVal));
+					elseif (is_object($eachVal) && ($eachVal instanceof \MongoId));
+					elseif (is_object($eachVal) && ($eachVal instanceof \Model)) {
+						$data[$eachKey] = $eachVal->_id;
+					}
+				}
+			}
+		}
 
 		return static::_flatData($data, $whichData);
 
@@ -467,6 +587,7 @@ abstract class Model implements \IteratorAggregate {
 					$eachData = $eachVal->flatData($whichData);
 				}
 				elseif ($eachVal instanceof \Model) {
+					// maybe I should get flatData here directly?
 					$eachData = $eachVal->getData(true, $whichData, true);
 				}
 				elseif (is_array($eachVal)) {

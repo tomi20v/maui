@@ -59,12 +59,30 @@ class Schema implements \IteratorAggregate {
 	}
 
 	/**
+	 * I return an attr. Identical to field($key) but has better IDE support...
+	 * @param string $key
+	 * @return \SchemaAttr
+	 */
+	public function getAttr($key) {
+		return $this->_schema[$key];
+	}
+
+	/**
 	 * I return true if $key field exists and is a relative
 	 * @param $key
 	 * @return bool
 	 */
 	public function hasRelative($key) {
 		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaRelative);
+	}
+
+	/**
+	 * I return a relative. Identical to field($key) but has better IDE support...
+	 * @param string $key
+	 * @return \SchemaRelative
+	 */
+	public function getRelative($key) {
+		return $this->_schema[$key];
 	}
 
 	/**
