@@ -30,7 +30,6 @@ class VPTester1 extends \VideoPilot {
 	}
 }
 
-
 class ModelTest extends \maui\TestCase {
 
 	public $videoData;

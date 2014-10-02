@@ -75,16 +75,22 @@ class ModelManager extends \Model {
 			return $m1 == $m2;
 		}
 		else {
-			if (is_array($m1));
+
+			if (is_array($m1)) {
+				$m1 = \maui\Model::_flatData($m1, \ModelManager::DATA_ALL);
+			}
 			elseif ($m1 instanceof \Model) {
-				$m1 = $m1->getData(true, \ModelManager::DATA_ALL, true);
+				$m1 = $m1->flatData(\ModelManager::DATA_ALL, true, true);
 			}
 			else return null;
-			if (is_array($m2));
+			if (is_array($m2)) {
+				$m2 = \maui\Model::_flatData($m2, \ModelManager::DATA_ALL);
+			}
 			elseif ($m2 instanceof \Model) {
-				$m2 = $m2->getData(true, \ModelManager::DATA_ALL, true);
+				$m2 = $m2->flatData(\ModelManager::DATA_ALL, true, true);
 			}
 			else return null;
+
 			foreach ($m1 as $eachKey=>$eachVal1) {
 				if (!isset($m2[$eachKey])) {
 					return false;

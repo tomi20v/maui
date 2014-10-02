@@ -544,10 +544,11 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * I return multidimensional array of just scalar values (models and collections transformed to their array representation)
 	 * @param int $whichData as in ModelManager
-	 * @param bool if true, recursive data (referenced relatives) will be included recursively. Otherwise just self attributes (for saving)
+	 * @param bool $deep if true, recursive data (referenced relatives) will be included recursively. Otherwise just self attributes (for saving)
+	 * @param bool $flattenIds if true, objects _id field will be flattened as well (otherwise kept as MongoId object)
 	 * @return array
 	 */
-	public function flatData($whichData=\ModelManager::DATA_ALL, $deep=true) {
+	public function flatData($whichData=\ModelManager::DATA_ALL, $deep=true, $flattenIds=false) {
 
 		$data = $this->getData(true, $whichData, true);
 
@@ -569,7 +570,7 @@ abstract class Model implements \IteratorAggregate {
 			}
 		}
 
-		return static::_flatData($data, $whichData);
+		return static::_flatData($data, $whichData, $flattenIds);
 
 	}
 
@@ -579,7 +580,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @param $whichData
 	 * @return array
 	 */
-	protected static function _flatData($data, $whichData) {
+	protected static function _flatData($data, $whichData, $flattenIds=false) {
 
 		if (is_array($data)) {
 			foreach ($data as $eachKey=>$eachVal) {
@@ -593,11 +594,15 @@ abstract class Model implements \IteratorAggregate {
 				elseif (is_array($eachVal)) {
 					$eachData = $eachVal;
 				}
+				elseif ($flattenIds && ($eachVal instanceof \MongoId)) {
+					$data[$eachKey] = $eachVal->__toString();
+					continue;
+				}
 				else {
 					continue;
 				}
 				foreach ($eachData as $eachDataKey=>$eachDataVal) {
-					$eachData[$eachDataKey] = static::_flatData($eachDataVal, $whichData);
+					$eachData[$eachDataKey] = static::_flatData($eachDataVal, $whichData, $flattenIds);
 				}
 				$data[$eachKey] = $eachData;
 			}
