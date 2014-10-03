@@ -257,88 +257,6 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * @param bool|string[] $fieldsOrDeepsave
-	 * 	true - do deep save (trigger save on all related objects). No save if no change
-	 *  false - only save this objects' updated fields. No save if no change
-	 *  string[] - saves the given fields, regardless if they have been changed
-	 * @param \Model[] this param is to be passed recursively and holds all objects' ID which's
-	 * 		save has been triggered already. This avoids infinite recursion in case of cyclic references
-	 * @return $this|null - to be clarified
-	 * @throws \Exception
-	 */
-	public function OBSsave($fieldsOrDeepsave=true, &$excludedObjectIds=array()) {
-
-		$DbCollection = static::_getDbCollection();
-		// do deep validation and save
-		switch (true) {
-		case ($fieldsOrDeepsave === true):
-			// first save referenced relatives
-			$objectHash = spl_object_hash($this);
-			if (in_array($objectHash, $excludedObjectIds)) {
-				continue;
-			}
-			$excludedObjectIds[] = $objectHash;
-
-			$Schema = static::_getSchema();
-			foreach ($Schema as $eachKey=>$EachField) {
-				if (($EachField instanceof \SchemaRelative) &&
-					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
-					$Relative = $this->val($eachKey);
-					if (!is_null($Relative)) {
-						$Relative = $this->_relative($eachKey);
-						$Relative->save(true, $excludedObjectIds);
-					}
-				}
-
-			}
-		// FALLTHROUGH
-		case ($fieldsOrDeepsave === false):
-			if (empty($this->_data)) {
-				return $this;
-			}
-			$this->_beforeSave();
-			if (!$this->validate(false)) {
-				return null;
-			}
-
-			$whichData = \ModelManager::DATA_ALL;
-			if (is_array($fieldsOrDeepsave)) {
-				$whichData = $fieldsOrDeepsave;
-			}
-			elseif ($fieldsOrDeepsave === false) {
-				$whichData = \ModelManager::DATA_CHANGED;
-			}
-			$data = $this->getData($whichData);
-#			return $data;
-			if ($this->_id) {
-				$result = $DbCollection->update(
-					array(\SchemaManager::KEY_ID => $this->_id),
-					array('$set' => $data)
-				);
-			}
-			else {
-				if (empty($data)) {
-					return null;
-				}
-				$result = $DbCollection->save(
-					$data
-				);
-			}
-			if (isset($result['ok']) && $result['ok']) {
-				foreach ($data as $eachKey=>$eachVal) {
-					$this->_originalData[$eachKey] = $eachVal;
-					unset($this->_data[$eachKey]);
-				}
-			}
-			// I might want to save return value?
-			return $result;
-		case is_array($fieldsOrDeepsave):
-			throw new \Exception('TBI');
-		}
-		return null;
-	}
-
-	/**
 	 * I save myself
 	 * @param bool $deep if true, relatives save will be triggered as well
 	 * @param null $whichData as in ModelManager. Default depends on $deep, see code
@@ -370,7 +288,6 @@ abstract class Model implements \IteratorAggregate {
 			foreach ($Schema as $eachKey=>$EachField) {
 				if (($EachField instanceof \SchemaRelative) &&
 					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
-//					$Relative = $this->val($eachKey);
 					$Relative = $this->_getRelative($eachKey, \ModelManager::DATA_ALL, true);
 					if (!is_null($Relative)) {
 						$Relative = $this->_relative($eachKey);
@@ -391,7 +308,7 @@ abstract class Model implements \IteratorAggregate {
 			return false;
 		}
 
-		$data = $this->flatData($whichData, false);
+		$data = $this->flatData($whichData, false, true);
 		$DbCollection = static::_getDbCollection();
 
 		if ($this->_id) {
@@ -548,7 +465,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @param bool $flattenIds if true, objects _id field will be flattened as well (otherwise kept as MongoId object)
 	 * @return array
 	 */
-	public function flatData($whichData=\ModelManager::DATA_ALL, $deep=true, $flattenIds=false) {
+	public function flatData($whichData=\ModelManager::DATA_ALL, $deep=true, $flattenIds=true) {
 
 		$data = $this->getData(true, $whichData, true);
 
@@ -594,7 +511,7 @@ abstract class Model implements \IteratorAggregate {
 				elseif (is_array($eachVal)) {
 					$eachData = $eachVal;
 				}
-				elseif ($flattenIds && ($eachVal instanceof \MongoId)) {
+				elseif ($flattenIds && ($eachVal instanceof \MongoId) && ($eachKey !== '_id')) {
 					$data[$eachKey] = $eachVal->__toString();
 					continue;
 				}
@@ -856,30 +773,6 @@ abstract class Model implements \IteratorAggregate {
 
 		return $this;
 
-	}
-
-	/**
-	 * I set or merge data
-	 * @param mixed[] $data data to use
-	 * @param bool $overwrite if true, I set originalData. Otherwise, I add $data to
-	 * 		current $_data. NOTE collections are overwritten this way (maybe fix this?)
-	 * @return $this
-	 * @throws \Exception
-	 */
-	public function OBSapply($data, $dataIsOriginal=false) {
-		if (!is_array($data)) {
-			throw new \Exception(echon($data));
-		}
-		elseif($dataIsOriginal) {
-			$this->_originalData = $data;
-			$this->_data = array();
-		}
-		else {
-			foreach ($data as $eachKey=>$eachVal) {
-				$this->field($eachKey, $eachVal);
-			}
-		}
-		return $this;
 	}
 
 	/**
