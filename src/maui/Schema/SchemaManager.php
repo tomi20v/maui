@@ -171,15 +171,15 @@ class SchemaManager extends \Schema {
 
 		foreach ($schema as $eachKey=>$eachVal) {
 			// 'field' => 'Classname' reference
-			if (is_string($eachKey) && \SchemaRelative::isSchemaObject($eachVal)) {
-				$ret->_schema[$eachKey] = \SchemaRelative::from($eachVal, $context, $eachKey);
+			if (is_string($eachKey) && \SchemaElementRelative::isSchemaObject($eachVal)) {
+				$ret->_schema[$eachKey] = \SchemaElementRelative::from($eachVal, $context, $eachKey);
 			}
 			// 'field' (just value, without key)
 			elseif (is_numeric($eachKey) && is_string($eachVal)) {
-				$ret->_schema[$eachVal] = \SchemaAttr::from($eachVal, $eachVal);
+				$ret->_schema[$eachVal] = \SchemaElementAttr::from($eachVal, $context, $eachVal);
 			}
-			elseif (is_string($eachKey) && \SchemaAttr::isSchemaAttr($eachVal)) {
-				$ret->_schema[$eachKey] = \SchemaAttr::from($eachVal, $eachKey);
+			elseif (is_string($eachKey) && \SchemaElementAttr::isSchemaAttr($eachVal)) {
+				$ret->_schema[$eachKey] = \SchemaElementAttr::from($eachVal, $context, $eachKey);
 			}
 			else {
 				throw new \Exception('invalid schema entry: ' . echon($eachKey) . ' / ' . echon($eachVal));
@@ -259,7 +259,7 @@ class SchemaManager extends \Schema {
 	 */
 	protected static function _filterBySchema($data, $Schema) {
 		/**
-		 * @var SchemaAttr|SchemaRelative $eachVal
+		 * @var SchemaElementAttr|SchemaElementRelative $eachVal
 		 */
 		foreach ($data as $eachKey => $eachVal) {
 			if ($Schema->hasAttr($eachKey));

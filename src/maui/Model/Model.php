@@ -286,7 +286,7 @@ abstract class Model implements \IteratorAggregate {
 			$excludedObjectIds[] = $objectHash;
 			$Schema = static::_getSchema();
 			foreach ($Schema as $eachKey=>$EachField) {
-				if (($EachField instanceof \SchemaRelative) &&
+				if (($EachField instanceof \SchemaElementRelative) &&
 					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
 					$Relative = $this->_getRelative($eachKey, \ModelManager::DATA_ALL, true);
 					if (!is_null($Relative)) {
@@ -302,7 +302,7 @@ abstract class Model implements \IteratorAggregate {
 			return null;
 		}
 
-		$this->_beforeSave();
+		$this->_beforeSave($whichData);
 
 		if (!$this->validate(false)) {
 			return false;
@@ -321,9 +321,7 @@ abstract class Model implements \IteratorAggregate {
 			if (empty($data)) {
 				return null;
 			}
-			$result = $DbCollection->save(
-				$data
-			);
+			$result = $DbCollection->save($data);
 		}
 
 		if (isset($result['ok']) && $result['ok']) {
@@ -346,35 +344,32 @@ abstract class Model implements \IteratorAggregate {
 
 	/**
 	 * I will be called before save's validation (so if it sets a value, it must be valid)
-	 * I call myself recursively for relative objects so I am safe being protected
+	 * only I call myself recursively for relative objects so I am safe being protected
+	 *
+	 * @param $whichData as in ModelManager constants
 	 */
-	protected function OBS_beforeSave() {
+	protected function _beforeSave($whichData) {
 		$Schema = static::_getSchema();
 		foreach ($Schema as $eachKey=>$EachField) {
-			if ($EachField instanceof \SchemaAttr) {
+			if ($EachField instanceof \SchemaElementAttr) {
 				$EachField->beforeSave($eachKey, $this);
 			}
-			elseif (!empty($eachVal)) {
-//				$eachVal = is_null($this->val($eachKey)) ? null : $this->_relative($eachKey);
-				$eachVal = is_null($this->val($eachKey)) ? null : $this->_getRelative($eachKey, \ModelManager::DATA_ALL, false);
+			else {
+				$eachVal = $this->fieldIsSet($eachKey, $whichData) ? null : $this->_getRelative($eachKey, $whichData, false);
 				if (is_null($eachVal));
 				elseif ($eachVal instanceof \Collection) {
 					foreach ($eachVal as $EachObject) {
-						$EachObject->_beforeSave();
+						$EachObject->_beforeSave($whichData);
 					}
 				}
-				else {
-					if(!is_object($eachVal)) {
-						echop($this); echop($eachKey); echop($eachVal); debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die;
-					}
+				elseif(is_object($eachVal)) {
 					$eachVal->_beforeSave();
+				}
+				else {
+					throw new \Exception('something has gone wrong');
 				}
 			}
 		}
-	}
-
-	protected function _beforeSave() {
-
 	}
 
 	////////////////////////////////////////////////////////////////////////////////

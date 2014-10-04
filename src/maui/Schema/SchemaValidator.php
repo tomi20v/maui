@@ -20,7 +20,7 @@ class SchemaValidator {
 	 * I consturct and return a SchemaValidator*** object based on definition
 	 * @param string|array|callable $validator validator definition or direct callback
 	 * @param mixed $validatorValue valud for validator
-	 * @param \SchemaAttr|null $parent some validators might need accessing parent object
+	 * @param \SchemaElementAttr|null $parent some validators might need accessing parent object
 	 * @return \SchemaValidator
 	 * @throws \Exception
 	 */

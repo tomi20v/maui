@@ -2,30 +2,10 @@
 
 namespace maui;
 
-class SchemaAttr {
-
-	use \maui\TraitHasLabel;
-
-	/**
-	 * @var string field name in schema
-	 */
-	protected $_key;
-
-	protected $_required = false;
-
-	protected $_hasMin = null;
-
-	protected $_hasMax = null;
-
-	/**
-	 * @var \SchemaValidator[]
-	 */
-	protected $_validators = array();
-
-//	protected $_callbacks = array();
+class SchemaElementAttr extends \SchemaElementAbstract {
 
 	public static function isSchemaAttr($schemaAttr) {
-		if ($schemaAttr instanceof \SchemaAttr);
+		if ($schemaAttr instanceof \SchemaElementAttr);
 		elseif (is_array($schemaAttr));
 		else return false;
 		return true;
@@ -33,18 +13,21 @@ class SchemaAttr {
 
 	/**
 	 * I build a nice schema attribute object
-	 * @param array|\SchemaAttr $attrSchema
+	 *
+*@param array|\SchemaElementAttr $attrSchema
+	 * @param string $context
 	 * @param string $key key in parent object
 	 * @return static
 	 * @throws \Exception
 	 */
-	public static function from($attrSchema, $key=null) {
-		if ($attrSchema instanceof \SchemaAttr) {
+	public static function from($attrSchema, $context, $key=null) {
+		if ($attrSchema instanceof \SchemaElementAttr) {
 			return $attrSchema;
 		}
 		elseif (is_string($attrSchema) && !is_numeric($key)) {
 			$SchemaAttr = new static();
 			$SchemaAttr->_key = $key;
+			$SchemaAttr->_context = $context;
 			return $SchemaAttr;
 		}
 		elseif (is_array($attrSchema)) {
@@ -95,15 +78,6 @@ class SchemaAttr {
 		else {
 			throw new \Exception();
 		}
-	}
-
-	/**
-	 * I return true if field has multiple values (ie. is array)
-	 * @return bool
-	 */
-	public function isMulti() {
-		return (!is_null($this->_hasMin) && ($this->_hasMin > 1)) ||
-			(!is_null($this->_hasMax) && ($this->_hasMax != 1));
 	}
 
 	/**
@@ -175,14 +149,6 @@ class SchemaAttr {
 			}
 		}
 		return empty($errors) ? null : $errors;
-	}
-
-	/**
-	 * @return string
-	 * @extendMe
-	 */
-	public function _getRequiredError() {
-		return 'required';
 	}
 
 	/**

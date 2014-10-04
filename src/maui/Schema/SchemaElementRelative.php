@@ -2,14 +2,7 @@
 
 namespace maui;
 
-class SchemaRelative {
-
-	use \maui\TraitHasLabel;
-
-	/**
-	 * @var string key in schema. redundant, but handy
-	 */
-	protected $_key;
+class SchemaElementRelative extends \SchemaElementAbstract {
 
 	/**
 	 * @var string class of relative
@@ -34,29 +27,14 @@ class SchemaRelative {
 	protected $_schema = null;
 
 	/**
-	 * @var \SchemaValidator[] relational validators
-	 */
-	protected $_validators = array();
-
-	/**
-	 * @var int minimum relatives
-	 */
-	protected $_hasMin = null;
-
-	/**
-	 * @var int maximum relatives
-	 */
-	protected $_hasMax = null;
-
-	/**
 	 * I tell if $objectSchema is valid definition for an object
 	 *
-*@param array|\SchemaRelative $objectSchema
+	 * @param array|\SchemaElementRelative $objectSchema
 	 * @return bool
 	 */
 	public static function isSchemaObject($objectSchema) {
 		if (is_string($objectSchema));
-		elseif ($objectSchema instanceof \SchemaRelative);
+		elseif ($objectSchema instanceof \SchemaElementRelative);
 		elseif (is_array($objectSchema)) {
 			// if array, a 'reference' => 'classname' is expected
 			if (!isset($objectSchema['class'])) {
@@ -71,13 +49,13 @@ class SchemaRelative {
 	/**
 	 * I create and return an object based from $objectSchema
 	 *
-*@param array|\SchemaRelative $objectSchema anything accepted by isSchemaObject()
+	 * @param array|\SchemaElementRelative $objectSchema anything accepted by isSchemaObject()
 	 * @param null|string $key key in schema definition, used as 'class' if class is not defined in the object
-	 * @return \SchemaRelative|static
+	 * @return \SchemaElementRelative|static
 	 * @throws \Exception
 	 */
 	public static function from($objectSchema, $context, $key=null) {
-		if ($objectSchema instanceof \SchemaRelative) {
+		if ($objectSchema instanceof \SchemaElementRelative) {
 			$SchemaObject = $objectSchema;
 		}
 		elseif (is_string($objectSchema) && !is_null($key)) {
@@ -154,7 +132,7 @@ class SchemaRelative {
 	 * @param $Model
 	 * @return bool
 	 */
-	public function validate($val, $Model) {
+	public function validate($val, $Model=null) {
 		return true;
 	}
 
@@ -164,7 +142,7 @@ class SchemaRelative {
 	 * @param $Model
 	 * @return null
 	 */
-	public function getErrors($val, $Model) {
+	public function getErrors($val, $Model=null) {
 		return null;
 	}
 
@@ -174,12 +152,16 @@ class SchemaRelative {
 	 * @param $Model
 	 * @return mixed
 	 */
-	public function apply(&$val, $Model) {
+	public function apply(&$val, $Model=null) {
 		return true;
 	}
 
 	public function filter($val) {
 		return $val;
+	}
+
+	public function beforeSave($key, $Model) {
+		return true;
 	}
 
 	/**
@@ -222,7 +204,7 @@ class SchemaRelative {
 	 * @throws \Exception
 	 */
 	public function getObjectData($Obj) {
-		switch ($this->_reference) {
+			switch ($this->_reference) {
 			case \SchemaManager::REF_INLINE:
 				return $Obj->getData();
 			case \SchemaManager::REF_REFERENCE:
@@ -241,17 +223,20 @@ class SchemaRelative {
 		return $this->_class;
 	}
 
+	/**
+	 * @return string $this->_reference
+	 */
 	public function getReference() {
 		return $this->_reference;
 	}
 
 	/**
-	 * @return bool I return true if current field stores multiple values
+	 * I check if $val is suitable to be set.
+	 * @param $val
+	 * @param string $key
+	 * @return bool
+	 * @throws \Exception
 	 */
-	public function isMulti() {
-		return ($this->_hasMax === 0) || ($this->_hasMin > 1) || ($this->_hasMax > 1);
-	}
-
 	public function checkVal($val, $key='') {
 
 		$classname = $this->_class;

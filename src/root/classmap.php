@@ -10,9 +10,10 @@ class Maui extends \maui\Maui {}
 abstract class Model extends \maui\Model {}
 class ModelManager extends \maui\ModelManager{}
 class Schema extends \maui\Schema{}
-class SchemaAttr extends \maui\SchemaAttr{}
+class SchemaElement extends \maui\SchemaElement{}
+class SchemaElementAttr extends \maui\SchemaElementAttr{}
+class SchemaElementRelative extends \maui\SchemaElementRelative{}
 class SchemaManager extends \maui\SchemaManager{}
-class SchemaRelative extends \maui\SchemaRelative{}
 class SchemaValidator extends \maui\SchemaValidator{}
 class SchemaValidatorKeys extends \maui\SchemaValidatorKeys{}
 class SchemaValidatorKeysValues extends \maui\SchemaValidatorKeysValues{}
