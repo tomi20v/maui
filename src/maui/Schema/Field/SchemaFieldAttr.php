@@ -2,7 +2,7 @@
 
 namespace maui;
 
-class SchemaFieldAttr extends \SchemaElementAbstract {
+class SchemaFieldAttr extends \SchemaFieldAbstract {
 
 	public static function isSchemaAttr($schemaAttr) {
 		if ($schemaAttr instanceof \SchemaFieldAttr);
