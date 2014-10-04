@@ -7,7 +7,7 @@ namespace maui;
  *
  * @package maui
  */
-abstract class SchemaElementAbstract {
+abstract class SchemaFieldAbstract {
 
 	use \maui\TraitHasLabel;
 
@@ -39,7 +39,7 @@ abstract class SchemaElementAbstract {
 	 * I return an instance of me created by $schema definition
 	 * @param array $schema definition
 	 * @param null $key my key in the object
-	 * @return \SchemaElementAttr|\SchemaElementRelative
+	 * @return \SchemaFieldAttr|\SchemaFieldRelative
 	 */
 	abstract public static function from($schema, $context, $key=null);
 

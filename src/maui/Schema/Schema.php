@@ -44,7 +44,7 @@ class Schema implements \IteratorAggregate {
 	 * I return SchemaAttr or SchemaRelative object on $key
 	 *
 *@param $key
-	 * @return \SchemaElementAttr
+	 * @return \SchemaFieldAttr
 	 */
 	public function field($key) {
 		return $this->_schema[$key];
@@ -56,14 +56,14 @@ class Schema implements \IteratorAggregate {
 	 * @return bool
 	 */
 	public function hasAttr($key) {
-		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaElementAttr);
+		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaFieldAttr);
 	}
 
 	/**
 	 * I return an attr. Identical to field($key) but has better IDE support...
 	 *
 *@param string $key
-	 * @return \SchemaElementAttr
+	 * @return \SchemaFieldAttr
 	 */
 	public function getAttr($key) {
 		return $this->_schema[$key];
@@ -75,14 +75,14 @@ class Schema implements \IteratorAggregate {
 	 * @return bool
 	 */
 	public function hasRelative($key) {
-		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaElementRelative);
+		return isset($this->_schema[$key]) && ($this->_schema[$key] instanceof \SchemaFieldRelative);
 	}
 
 	/**
 	 * I return a relative. Identical to field($key) but has better IDE support...
 	 *
 *@param string $key
-	 * @return \SchemaElementRelative
+	 * @return \SchemaFieldRelative
 	 */
 	public function getRelative($key) {
 		return $this->_schema[$key];

@@ -286,7 +286,7 @@ abstract class Model implements \IteratorAggregate {
 			$excludedObjectIds[] = $objectHash;
 			$Schema = static::_getSchema();
 			foreach ($Schema as $eachKey=>$EachField) {
-				if (($EachField instanceof \SchemaElementRelative) &&
+				if (($EachField instanceof \SchemaFieldRelative) &&
 					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
 					$Relative = $this->_getRelative($eachKey, \ModelManager::DATA_ALL, true);
 					if (!is_null($Relative)) {
@@ -351,24 +351,7 @@ abstract class Model implements \IteratorAggregate {
 	protected function _beforeSave($whichData) {
 		$Schema = static::_getSchema();
 		foreach ($Schema as $eachKey=>$EachField) {
-			if ($EachField instanceof \SchemaElementAttr) {
-				$EachField->beforeSave($eachKey, $this);
-			}
-			else {
-				$eachVal = $this->fieldIsSet($eachKey, $whichData) ? null : $this->_getRelative($eachKey, $whichData, false);
-				if (is_null($eachVal));
-				elseif ($eachVal instanceof \Collection) {
-					foreach ($eachVal as $EachObject) {
-						$EachObject->_beforeSave($whichData);
-					}
-				}
-				elseif(is_object($eachVal)) {
-					$eachVal->_beforeSave();
-				}
-				else {
-					throw new \Exception('something has gone wrong');
-				}
-			}
+			$EachField->beforeSave($eachKey, $this);
 		}
 	}
 

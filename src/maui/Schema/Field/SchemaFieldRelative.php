@@ -2,7 +2,7 @@
 
 namespace maui;
 
-class SchemaElementRelative extends \SchemaElementAbstract {
+class SchemaFieldRelative extends \SchemaFieldAbstract {
 
 	/**
 	 * @var string class of relative
@@ -29,12 +29,12 @@ class SchemaElementRelative extends \SchemaElementAbstract {
 	/**
 	 * I tell if $objectSchema is valid definition for an object
 	 *
-	 * @param array|\SchemaElementRelative $objectSchema
+	 * @param array|\SchemaFieldRelative $objectSchema
 	 * @return bool
 	 */
 	public static function isSchemaObject($objectSchema) {
 		if (is_string($objectSchema));
-		elseif ($objectSchema instanceof \SchemaElementRelative);
+		elseif ($objectSchema instanceof \SchemaFieldRelative);
 		elseif (is_array($objectSchema)) {
 			// if array, a 'reference' => 'classname' is expected
 			if (!isset($objectSchema['class'])) {
@@ -49,13 +49,13 @@ class SchemaElementRelative extends \SchemaElementAbstract {
 	/**
 	 * I create and return an object based from $objectSchema
 	 *
-	 * @param array|\SchemaElementRelative $objectSchema anything accepted by isSchemaObject()
+	 * @param array|\SchemaFieldRelative $objectSchema anything accepted by isSchemaObject()
 	 * @param null|string $key key in schema definition, used as 'class' if class is not defined in the object
-	 * @return \SchemaElementRelative|static
+	 * @return \SchemaFieldRelative|static
 	 * @throws \Exception
 	 */
 	public static function from($objectSchema, $context, $key=null) {
-		if ($objectSchema instanceof \SchemaElementRelative) {
+		if ($objectSchema instanceof \SchemaFieldRelative) {
 			$SchemaObject = $objectSchema;
 		}
 		elseif (is_string($objectSchema) && !is_null($key)) {

@@ -2,10 +2,10 @@
 
 namespace maui;
 
-class SchemaElementAttr extends \SchemaElementAbstract {
+class SchemaFieldAttr extends \SchemaElementAbstract {
 
 	public static function isSchemaAttr($schemaAttr) {
-		if ($schemaAttr instanceof \SchemaElementAttr);
+		if ($schemaAttr instanceof \SchemaFieldAttr);
 		elseif (is_array($schemaAttr));
 		else return false;
 		return true;
@@ -14,14 +14,14 @@ class SchemaElementAttr extends \SchemaElementAbstract {
 	/**
 	 * I build a nice schema attribute object
 	 *
-*@param array|\SchemaElementAttr $attrSchema
+*@param array|\SchemaFieldAttr $attrSchema
 	 * @param string $context
 	 * @param string $key key in parent object
 	 * @return static
 	 * @throws \Exception
 	 */
 	public static function from($attrSchema, $context, $key=null) {
-		if ($attrSchema instanceof \SchemaElementAttr) {
+		if ($attrSchema instanceof \SchemaFieldAttr) {
 			return $attrSchema;
 		}
 		elseif (is_string($attrSchema) && !is_numeric($key)) {
