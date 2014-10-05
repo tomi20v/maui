@@ -108,12 +108,16 @@ abstract class Model implements \IteratorAggregate {
 	 * @return \Schema I return my schema and cache in static. Also call __init() if necessary
 	 */
 	protected static function _getSchema() {
+
 		static $Schema;
+
 		if (is_null($Schema)) {
 			static::__init();
 			$Schema = \SchemaManager::getSchema(get_called_class());
 		}
+
 		return $Schema;
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -125,14 +129,16 @@ abstract class Model implements \IteratorAggregate {
 	 * @return \MongoCollection
 	 */
 	protected static function _getDbCollection() {
+
 		static $_DbCollection;
+
 		if (is_null($_DbCollection)) {
-//			$collectionClassname = static::getCollectionClassname();
-//			$dbCollectionName = $collectionClassname::getDbCollectionName(get_called_class());
 			$dbCollectionName = static::getDbCollectionName();
 			$_DbCollection = \Maui::instance()->dbDb()->$dbCollectionName;
 		}
+
 		return $_DbCollection;
+
 	}
 
 	/**
@@ -142,14 +148,18 @@ abstract class Model implements \IteratorAggregate {
 	 * @extendMe eg. in case reusing a collection class for multiple models
 	 */
 	public static function getCollection($data=null) {
+
 		$collectionClassname = static::getCollectionClassname();
+
 		if (class_exists($collectionClassname)) {
 			$ret = new $collectionClassname($data);
 		}
 		else {
 			$ret = new \Collection($data, get_called_class());
 		}
+
 		return $ret;
+
 	}
 
 	/**
@@ -158,16 +168,23 @@ abstract class Model implements \IteratorAggregate {
 	 * @extendMe you can reuse collections for different models with this
 	 */
 	public static function getCollectionClassname() {
+
 		$collectionClassname = ucfirst(get_called_class()) . 'Collection';
+
 		if (!class_exists($collectionClassname)) {
 			$parentClassname = get_parent_class(get_called_class());
 			$collectionClassname = $parentClassname === false
 				? 'Collection'
 				: $parentClassname::getCollectionClassname();
 		}
+
 		return $collectionClassname;
+
 	}
 
+	/**
+	 * @return string
+	 */
 	public static function getDbCollectionName() {
 		return 'Collection';
 	}
@@ -175,6 +192,10 @@ abstract class Model implements \IteratorAggregate {
 	////////////////////////////////////////////////////////////////////////////////
 	//	CRUD etc
 	////////////////////////////////////////////////////////////////////////////////
+
+	public static function find($by) {
+		throw new \Exception('TBI');
+	}
 
 	/**
 	 * @param mixed[] $loadData prepared data example to load by
@@ -210,9 +231,9 @@ abstract class Model implements \IteratorAggregate {
 	 * @param bool $loadEmpty if true, I will load even if data to select is empty
 	 * @return $this
 	 */
-	public function OBSload($loadEmpty=false) {
+	public function load($loadEmpty=false) {
 		$Collection = static::_getDbCollection();
-		$loadData = $this->getData(\ModelManager::DATA_ALL);
+		$loadData = $this->flatData(\ModelManager::DATA_ALL, true, true);
 		if (!$loadEmpty && empty($loadData)) {
 			return false;
 		}
@@ -227,9 +248,9 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * I load _originalData by original data. Won't touch actual data in _data
 	 */
-	public function OBSloadOriginalData() {
+	public function loadOriginalData() {
 		$Collection = static::_getDbCollection();
-		$findData = $this->getData(\ModelManager::DATA_ORIGINAL);
+		$findData = $this->flatData(\ModelManager::DATA_ORIGINAL, true, true);
 		if (empty($findData)) {
 			return false;
 		}
@@ -250,10 +271,6 @@ abstract class Model implements \IteratorAggregate {
 			$this->load();
 		}
 		return $this;
-	}
-
-	public function find($by) {
-		throw new \Exception('TBI');
 	}
 
 	/**
@@ -288,9 +305,9 @@ abstract class Model implements \IteratorAggregate {
 			foreach ($Schema as $eachKey=>$EachField) {
 				if (($EachField instanceof \SchemaFieldRelative) &&
 					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
-					$Relative = $this->_getRelative($eachKey, \ModelManager::DATA_ALL, true);
-					if (!is_null($Relative)) {
-						$Relative = $this->_relative($eachKey);
+					// save only if set. If set but empty, save() won't save it anyway
+					if ($this->fieldIsSet($eachKey, $whichData)) {
+						$Relative = $this->_getRelative($eachKey, $whichData, false);
 						$Relative->save($whichData, true, $excludedObjectIds);
 					}
 				}
@@ -356,7 +373,7 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
-	// setters getters, data related
+	// data related general
 	////////////////////////////////////////////////////////////////////////////////
 
 	/**
@@ -508,6 +525,47 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
+	 * I set or merge data
+	 * @param mixed[] $data
+	 * @param bool $overWrite if true, $data is set as data erasing old, otherwise they're merged
+	 * @param int $whichData as in ModelManager constants
+	 * @return $this
+	 * @throws \Exception
+	 */
+	public function apply($data, $overWrite=false, $whichData=\ModelManager::DATA_CHANGED) {
+
+		if (!is_array($data)) {
+			throw new \Exception('can apply only an array of data, got: ' . echon($data));
+		}
+
+		switch ($whichData) {
+		case \ModelManager::DATA_ORIGINAL:
+			$dataStore = &$this->_originalData;
+			break;
+		case \ModelManager::DATA_CHANGED:
+		case \ModelManager::DATA_ALL:
+			$dataStore = &$this->_data;
+			break;
+		}
+
+		if ($overWrite) {
+			$dataStore = $data;
+		}
+		else {
+			foreach ($data as $eachKey=>$eachVal) {
+				$this->setField($eachKey, $eachVal, $whichData);
+			}
+		}
+
+		return $this;
+
+	}
+
+	////////////////////////////////////////////////////////////////////////////////
+	// data related, fields
+	////////////////////////////////////////////////////////////////////////////////
+
+	/**
 	 * I return if an attribute exists in my schema
 	 *
 	 * @param string $key
@@ -546,6 +604,13 @@ abstract class Model implements \IteratorAggregate {
 		throw new \Exception('field ' . $key . ' does not exists in class ' . get_class($this));
 	}
 
+	/**
+	 * I return a field. I wrap _getAttr() and _getRelative
+	 * @param $key
+	 * @param int $whichData
+	 * @param bool $asIs
+	 * @return null
+	 */
 	public function getField($key, $whichData=\ModelManager::DATA_CHANGED, $asIs=false) {
 		if ($this->hasAttr($key)) {
 			return $this->_getAttr($key, $whichData, $asIs);
@@ -555,6 +620,13 @@ abstract class Model implements \IteratorAggregate {
 		}
 	}
 
+	/**
+	 * I set a fields value. I wrap _setAttr() and _setRelative()
+	 * @param $key
+	 * @param $val
+	 * @param int $whichData
+	 * @return $this
+	 */
 	public function setField($key, $val, $whichData=\ModelManager::DATA_CHANGED) {
 		if ($this->hasAttr($key)) {
 			return $this->_setAttr($key, $val, $whichData);
@@ -640,52 +712,6 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * I return or set relative on field $field
-	 *
-	 * @param $key
-	 * @param $this|mixed $value
-	 */
-	protected function _relative($key, $val=null) {
-		$ret = null;
-		if (count(func_get_args()) == 1) {
-			if (!array_key_exists($key, $this->_data) && array_key_exists($key, $this->_originalData)) {
-				// @todo I should implement deep cloning
-				$this->_data[$key] = clone $this->_originalData[$key];
-			}
-			if (array_key_exists($key, $this->_data)) {
-				$ret = $this->_data[$key];
-				if (is_object($ret) && !($ret instanceof \MongoId));
-				else {
-					$Rel = static::_getSchema()->field($key);
-					$ret = $Rel->getReferredObject($this->_data[$key]);
-					$this->_data[$key] = $ret;
-				}
-			}
-		}
-		else {
-			$Rel = static::_getSchema()->field($key);
-			$classname = $Rel->getObjectClassname();
-			if ($val instanceof \Model) {
-				if (!$val instanceof $classname) {
-					throw new \Exception('cannot set ' . echon($val) . ' for field ' . echon($key) . ' as it is not subclass of ' . echon($classname));
-				}
-			}
-			elseif ($val instanceof \Collection) {
-				if (!$Rel->isMulti()) {
-					throw new \Exception('cannot set collection for field ' . echon($key) . ' as is not multi');
-				}
-				$collectionClassname = $classname::getCollectionName();
-				if (!$val instanceof $collectionClassname) {
-					throw new \Exception('cannot set collection ' . echon($val) . ' for field ' . echon($key) . ' as it is not subclass of ' . echon($classname));
-				}
-			}
-			$this->_data[$key] = $val;
-			$ret = $this;
-		}
-		return $ret;
-	}
-
-	/**
 	 * @param string $key
 	 * @param int $whichData as in ModelManager::DATA_* constants
 	 * @param bool $asIs get relative value as is (eg. return empty or just mongoId object) or create (and set) proper object
@@ -747,43 +773,6 @@ abstract class Model implements \IteratorAggregate {
 		case \ModelManager::DATA_ORIGINAL:
 			$this->_originalData[$key] = $val;
 			break;
-		}
-
-		return $this;
-
-	}
-
-	/**
-	 * I set or merge data
-	 * @param mixed[] $data
-	 * @param bool $overWrite if true, $data is set as data erasing old, otherwise they're merged
-	 * @param int $whichData as in ModelManager constants
-	 * @return $this
-	 * @throws \Exception
-	 */
-	public function apply($data, $overWrite=false, $whichData=\ModelManager::DATA_CHANGED) {
-
-		if (!is_array($data)) {
-			throw new \Exception('can apply only an array of data, got: ' . echon($data));
-		}
-
-		switch ($whichData) {
-		case \ModelManager::DATA_ORIGINAL:
-			$dataStore = &$this->_originalData;
-			break;
-		case \ModelManager::DATA_CHANGED:
-		case \ModelManager::DATA_ALL:
-			$dataStore = &$this->_data;
-			break;
-		}
-
-		if ($overWrite) {
-			$dataStore = $data;
-		}
-		else {
-			foreach ($data as $eachKey=>$eachVal) {
-				$this->setField($eachKey, $eachVal, $whichData);
-			}
 		}
 
 		return $this;
@@ -873,6 +862,12 @@ abstract class Model implements \IteratorAggregate {
 		}
 	}
 
+	/**
+	 * I return all or some errors
+	 * @param bool $key
+	 * @return array|\array[]
+	 * @throws \Exception
+	 */
 	public function getErrors($key=true) {
 		switch(true) {
 			case $key === true:
