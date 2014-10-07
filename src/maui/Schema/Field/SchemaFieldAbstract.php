@@ -36,12 +36,16 @@ abstract class SchemaFieldAbstract {
 	protected $_validators = array();
 
 	/**
-	 * I return an instance of me created by $schema definition
+	 * I return an instance of me created by $schema definition. This method must be implemented in child classes
+	 * 	(but should not be abstract as it is static...)
 	 * @param array $schema definition
 	 * @param null $key my key in the object
 	 * @return \SchemaFieldAttr|\SchemaFieldRelative
 	 */
-	abstract public static function from($schema, $context, $key=null);
+	public static function from($schema, $context, $key=null) {
+		// this
+		return null;
+	}
 
 	/**
 	 * @return bool I return true if current field stores multiple values

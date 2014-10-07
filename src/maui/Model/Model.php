@@ -193,8 +193,14 @@ abstract class Model implements \IteratorAggregate {
 	//	CRUD etc
 	////////////////////////////////////////////////////////////////////////////////
 
-	public static function find($by) {
-		throw new \Exception('TBI');
+	/**
+	 * I return finder object for my class
+	 * @return \ModelFinder
+	 */
+	public static function finder() {
+
+		return new \ModelFinder(get_called_class());
+
 	}
 
 	/**
@@ -222,8 +228,23 @@ abstract class Model implements \IteratorAggregate {
 			$classname::__init();
 		}
 		$data = \SchemaManager::filterBySchema($data, $classname);
+		/**
+		 * @var \Model $Model
+		 */
 		$Model = new $classname($data, true);
 		return $Model;
+	}
+
+	/**
+	 * I return if model is loaded. I consider loaded any model whose originaldata contains more than the _id and _type
+	 * @return bool
+	 */
+	public function isLoaded() {
+		$keys = array('_id', '_type');
+		if (!empty($this->_originalData) && count(array_diff_key($this->_originalData, array_flip($keys)))) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -232,11 +253,20 @@ abstract class Model implements \IteratorAggregate {
 	 * @return $this
 	 */
 	public function load($loadEmpty=false) {
-		$Collection = static::_getDbCollection();
-		$loadData = $this->flatData(\ModelManager::DATA_ALL, true, true);
+		$loadData = $this->flatData(\ModelManager::DATA_ALL, false, true);
 		if (!$loadEmpty && empty($loadData)) {
 			return false;
 		}
+		return $this->loadBy($loadData);
+	}
+
+	/**
+	 * I load by data directly (data can be a mongo query document in array)
+	 * @param $loadData
+	 * @return $this
+	 */
+	public function loadBy($loadData) {
+		$Collection = static::_getDbCollection();
 		$data = $Collection->findOne($loadData);
 		// I might not want to overwrite data if not found... to be checked later
 		$data = is_null($data) ? array() : $data;
@@ -250,7 +280,7 @@ abstract class Model implements \IteratorAggregate {
 	 */
 	public function loadOriginalData() {
 		$Collection = static::_getDbCollection();
-		$findData = $this->flatData(\ModelManager::DATA_ORIGINAL, true, true);
+		$findData = $this->flatData(\ModelManager::DATA_ORIGINAL, false, true);
 		if (empty($findData)) {
 			return false;
 		}

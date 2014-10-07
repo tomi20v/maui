@@ -8,6 +8,7 @@
 class Collection extends \maui\Collection{}
 class Maui extends \maui\Maui {}
 abstract class Model extends \maui\Model {}
+class ModelFinder extends \maui\ModelFinder {}
 class ModelManager extends \maui\ModelManager{}
 class Schema extends \maui\Schema{}
 class SchemaField extends \maui\SchemaField{}
