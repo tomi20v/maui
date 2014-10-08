@@ -269,9 +269,12 @@ abstract class Model implements \IteratorAggregate {
 		$Collection = static::_getDbCollection();
 		$data = $Collection->findOne($loadData);
 		// I might not want to overwrite data if not found... to be checked later
-		$data = is_null($data) ? array() : $data;
-		$this->_originalData = $data;
-		$this->_data = array();
+		if (is_null($data)) {
+			// do nothing for now, see comment
+		}
+		else {
+			$this->mergeData($data);
+		}
 		return $this;
 	}
 
@@ -568,18 +571,20 @@ abstract class Model implements \IteratorAggregate {
 			throw new \Exception('can apply only an array of data, got: ' . echon($data));
 		}
 
-		switch ($whichData) {
-		case \ModelManager::DATA_ORIGINAL:
-			$dataStore = &$this->_originalData;
-			break;
-		case \ModelManager::DATA_CHANGED:
-		case \ModelManager::DATA_ALL:
-			$dataStore = &$this->_data;
-			break;
-		}
-
 		if ($overWrite) {
+
+			switch ($whichData) {
+			case \ModelManager::DATA_ORIGINAL:
+				$dataStore = &$this->_originalData;
+				break;
+			case \ModelManager::DATA_CHANGED:
+			case \ModelManager::DATA_ALL:
+				$dataStore = &$this->_data;
+				break;
+			}
+
 			$dataStore = $data;
+
 		}
 		else {
 			foreach ($data as $eachKey=>$eachVal) {
@@ -588,6 +593,18 @@ abstract class Model implements \IteratorAggregate {
 		}
 
 		return $this;
+
+	}
+
+	public function mergeData($data = null) {
+
+		// @todo I should write this unrolled and low level and apply optimizations
+		$this->apply($this->_data, false, ModelManager::DATA_ORIGINAL);
+		$this->_data = array();
+
+		if (!is_null($data)) {
+			$this->apply($data, false, ModelManager::DATA_ORIGINAL);
+		}
 
 	}
 
@@ -698,12 +715,19 @@ abstract class Model implements \IteratorAggregate {
 	 * I return an attribute
 	 * @param string $key
 	 * @param int $whichData
-	 * @param bool $asIs not used here
+	 * @param bool $asIs if false, and field is multi, cast it to array
 	 * @return null
 	 */
 	protected function _getAttr($key, $whichData, $asIs) {
 		$val = isset($this->_data[$key]) ? $this->_data[$key] : null;
 		$originalVal = isset($this->_originalData[$key]) ? $this->_originalData[$key] : null;
+
+		// if not getting data as is, and field is multi, cast it to array
+		if (!$asIs && static::_getSchema()->getAttr($key)->isMulti()) {
+			$val = (array) $val;
+			$originalVal = (array) $originalVal;
+		}
+
 		switch ($whichData) {
 		case \ModelManager::DATA_CHANGED:
 			return $val;
@@ -759,7 +783,7 @@ abstract class Model implements \IteratorAggregate {
 			$ret = $val;
 			break;
 		case \ModelManager::DATA_ORIGINAL:
-			$ret = $val;
+			$ret = $originalVal;
 			break;
 		case \ModelManager::DATA_ALL:
 			$ret = isset($val) ? $val : $originalVal;
@@ -791,9 +815,25 @@ abstract class Model implements \IteratorAggregate {
 
 	protected function _setRelative($key, $val, $whichData) {
 
+		/**
+		 * @var \SchemaFieldRelative $Rel
+		 */
 		$Rel = static::_getSchema()->field($key);
 
 		$Rel->checkVal($val);
+
+		// do not overwrite if it's a relative, and already inflated, and incoming data is the same but by reference
+		if ($Rel->getReference() === \SchemaManager::REF_REFERENCE) {
+			$currentValue = $this->_getRelative($key, $whichData, true);
+			// @todo implement check for collections
+			if (($currentValue instanceof \Model) &&
+				is_string($val) &&
+				((string)$currentValue->_id === $val)) {
+
+				return;
+
+			}
+		}
 
 		switch ($whichData) {
 		case \ModelManager::DATA_CHANGED:
