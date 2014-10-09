@@ -849,6 +849,17 @@ abstract class Model implements \IteratorAggregate {
 
 	}
 
+	/**
+	 * get bubbler helper
+	 * @return \ModelBubbler
+	 * @see \maui\ModelBubbler
+	 */
+	public function getBubbler() {
+
+		return new \ModelBubbler($this);
+
+	}
+
 	////////////////////////////////////////////////////////////////////////////////
 	// validation
 	////////////////////////////////////////////////////////////////////////////////

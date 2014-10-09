@@ -12,6 +12,7 @@ class ModelFinder extends \maui\ModelFinder {}
 class ModelManager extends \maui\ModelManager{}
 class Schema extends \maui\Schema{}
 class SchemaField extends \maui\SchemaField{}
+class SchemaFieldAbstract extends \maui\SchemaFieldAbstract {}
 class SchemaFieldAttr extends \maui\SchemaFieldAttr{}
 class SchemaFieldRelative extends \maui\SchemaFieldRelative{}
 class SchemaManager extends \maui\SchemaManager{}

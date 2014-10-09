@@ -173,7 +173,7 @@ class SchemaFieldRelative extends \SchemaFieldAbstract {
 		$classname = $this->_class;
 
 		// collection
-		if ($this->_hasMax && ($this->_hasMax > 1)) {
+		if ($this->isMulti()) {
 			$data = array();
 			foreach ($val as $eachVal) {
 				if ($eachVal instanceof \MongoId) {
