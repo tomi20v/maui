@@ -170,25 +170,31 @@ class SchemaFieldRelative extends \SchemaFieldAbstract {
 	 * @return mixed
 	 */
 	public function getReferredObject($val) {
+
 		$classname = $this->_class;
 
 		// collection
 		if ($this->isMulti()) {
 			$data = array();
-			foreach ($val as $eachVal) {
-				if ($eachVal instanceof \MongoId) {
-					$eachVal = array(\SchemaManager::KEY_ID => $eachVal);
+			if (!empty($val)) {
+				foreach ($val as $eachVal) {
+					// if value is an ID only, put into data as id value as it can only be a reference
+					if ($eachVal instanceof \MongoId) {
+						$eachVal = array(\SchemaManager::KEY_ID => $eachVal);
+					}
+					// if referred object, put into data the referred fields value
+					elseif ($this->_reference == \SchemaManager::REF_REFERENCE) {
+						$eachVal = array($this->_referredField => $eachVal);
+					}
+					// if inline, keep as is
+					elseif ($this->_reference == \SchemaManager::REF_INLINE);
+					else {
+						throw new \Exception(echon($eachVal));
+					}
+					$data[] = $eachVal;
 				}
-				elseif ($this->_reference == \SchemaManager::REF_REFERENCE) {
-					$eachVal = array($this->_referredField => $eachVal);
-				}
-				elseif ($this->_reference == \SchemaManager::REF_INLINE);
-				else {
-					throw new \Exception(echon($eachVal));
-				}
-				$data[] = $eachVal;
 			}
-			$ret = $classname::getCollection($val);
+			$ret = $classname::getCollection($data);
 		}
 		// single object
 		else {
