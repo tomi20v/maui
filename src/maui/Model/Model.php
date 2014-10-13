@@ -71,6 +71,10 @@ abstract class Model implements \IteratorAggregate {
 		return $this->field($key, $val);
 	}
 
+	public function __isset($key) {
+		return $this->fieldIsSet($key);
+	}
+
 	/**
 	 * I must be called before anything (__construct() does it)
 	 */
