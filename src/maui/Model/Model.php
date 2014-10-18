@@ -2,6 +2,7 @@
 
 namespace maui;
 
+// @todo remove ID flattening when implementing REF_AUTO so the same ID representation can match ID only and full object as well
 abstract class Model implements \IteratorAggregate {
 
 	use \maui\TraitHasLabel;
@@ -343,7 +344,8 @@ abstract class Model implements \IteratorAggregate {
 				if (($EachField instanceof \SchemaFieldRelative) &&
 					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
 					// save only if set. If set but empty, save() won't save it anyway
-					if ($this->fieldIsSet($eachKey, $whichData)) {
+					//if ($this->fieldIsSet($eachKey, $whichData)) {
+					if ($this->fieldNotNull($eachKey, $whichData)) {
 						$Relative = $this->_getRelative($eachKey, $whichData, false);
 						$Relative->save($whichData, true, $excludedObjectIds);
 					}
@@ -362,7 +364,7 @@ abstract class Model implements \IteratorAggregate {
 			return false;
 		}
 
-		$data = $this->flatData($whichData, false, true);
+		$data = $this->flatData($whichData, true, true);
 		$DbCollection = static::_getDbCollection();
 
 		if ($this->_id) {
@@ -491,70 +493,44 @@ abstract class Model implements \IteratorAggregate {
 	}
 
 	/**
-	 * I return multidimensional array of just scalar values (models and collections transformed to their array representation)
-	 * @param int $whichData as in ModelManager
-	 * @param bool $deep if true, recursive data (referenced relatives) will be included recursively. Otherwise just self attributes (for saving)
-	 * @param bool $flattenIds if true, objects _id field will be flattened as well (otherwise kept as MongoId object)
-	 * @return array
+	 * I return data representation in a multi dimensional array, suitable for save. This same data can be set for the
+	 * 		proper model and it shall be the same as before save.
+	 * @param int $whichData
+	 * @return array multidimensional array of just scalar values
+	 * @throws \Exception
 	 */
-	public function flatData($whichData=\ModelManager::DATA_ALL, $deep=true, $flattenIds=true) {
+	public function flatData($whichData=\ModelManager::DATA_ALL) {
 
-		$data = $this->getData(true, $whichData, true);
+		$data = array();
 
-		if (!$deep) {
-			$Schema = static::_getSchema();
-			foreach ($data as $eachKey=>$eachVal) {
-				if (!$Schema->hasRelative($eachKey)) {
-					continue;
-				}
-				$Rel = $Schema->getRelative($eachKey);
-				if ($Rel->getReference() == \SchemaManager::REF_REFERENCE) {
-					// note this cannot be unset as then a saved field could never be overwritten with empty (null) value
-					if (is_null($eachVal));
-					elseif (is_object($eachVal) && ($eachVal instanceof \MongoId));
-					elseif (is_object($eachVal) && ($eachVal instanceof \Model)) {
-						$data[$eachKey] = $eachVal->_id;
+		$Schema = static::_getSchema();
+
+		foreach ($Schema as $eachKey=>$EachField) {
+			if (!$this->fieldIsSet($eachKey, $whichData)) {
+				continue;
+			}
+			$eachVal = $this->getField($eachKey, $whichData, true);
+			if (is_null($eachVal)) {
+
+			}
+			elseif (($eachVal instanceof \Model) && ($EachField instanceof \SchemaFieldRelative)) {
+				$eachVal = $EachField->getReference() === \SchemaManager::REF_INLINE
+					? $eachVal->flatData($whichData)
+					: (is_null($eachVal->_id) ? null : '' . $eachVal->_id);
+			}
+			elseif ($EachField->isMulti() && is_array($eachVal)) {
+				foreach ($eachVal as $eachValKey=>$eachValVal) {
+					if (($eachValVal instanceof \Model) && ($EachField instanceof \SchemaFieldRelative)) {
+						$eachVal[$eachValKey] = $EachField->getReference() === \SchemaManager::REF_INLINE
+							? $eachValVal->flatData($whichData)
+							: '' . $eachValVal->_id;
 					}
 				}
 			}
-		}
-
-		return static::_flatData($data, $whichData, $flattenIds);
-
-	}
-
-	/**
-	 * I flatten an array so models and collections are transformed to their array representation
-	 * @param $data
-	 * @param $whichData
-	 * @return array
-	 */
-	protected static function _flatData($data, $whichData, $flattenIds=false) {
-
-		if (is_array($data)) {
-			foreach ($data as $eachKey=>$eachVal) {
-				if ($eachVal instanceof \Collection) {
-					$eachData = $eachVal->flatData($whichData);
-				}
-				elseif ($eachVal instanceof \Model) {
-					// maybe I should get flatData here directly?
-					$eachData = $eachVal->getData(true, $whichData, true);
-				}
-				elseif (is_array($eachVal)) {
-					$eachData = $eachVal;
-				}
-				elseif ($flattenIds && ($eachVal instanceof \MongoId) && ($eachKey !== '_id')) {
-					$data[$eachKey] = $eachVal->__toString();
-					continue;
-				}
-				else {
-					continue;
-				}
-				foreach ($eachData as $eachDataKey=>$eachDataVal) {
-					$eachData[$eachDataKey] = static::_flatData($eachDataVal, $whichData, $flattenIds);
-				}
-				$data[$eachKey] = $eachData;
+			elseif ($eachVal instanceof \Collection) {
+				throw new \Exception('TBI');
 			}
+			$data[$eachKey] = $eachVal;
 		}
 
 		return $data;
@@ -706,6 +682,18 @@ abstract class Model implements \IteratorAggregate {
 		throw new \Exception('invalid value (' . echon($whichData) . ' for $whichData in fieldIsSet()');
 	}
 
+	public function fieldNotNull($key, $whichData = \ModelManager::DATA_ALL) {
+		switch($whichData) {
+		case \ModelManager::DATA_CHANGED:
+			return isset($this->_data[$key]);
+		case \ModelManager::DATA_ORIGINAL:
+			return isset($this->_originalData[$key]);
+		case \ModelManager::DATA_ALL:
+			return isset($this->_data[$key]) || isset($this->_originalData[$key]);
+		}
+		throw new \Exception('invalid value (' . echon($whichData) . ' for $whichData in fieldIsSet()');
+	}
+
 	/**
 	 * I return if I have an attribute called $key
 	 * @param $key
@@ -734,12 +722,23 @@ abstract class Model implements \IteratorAggregate {
 
 		switch ($whichData) {
 		case \ModelManager::DATA_CHANGED:
-			return $val;
+			$ret = $val;
+			break;
 		case \ModelManager::DATA_ORIGINAL:
-			return $originalVal;
+			$ret = $originalVal;
+			break;
 		case \ModelManager::DATA_ALL:
-			return isset($val) ? $val : $originalVal;
+			$ret = isset($val) ? $val : $originalVal;
+			break;
 		}
+
+		if (!$asIs && is_null($ret)) {
+			$Attr = static::_getSchema()->getAttr($key);
+			$ret = $Attr->getDefault($key, $this);
+		}
+
+		return $ret;
+
 	}
 
 	/**
