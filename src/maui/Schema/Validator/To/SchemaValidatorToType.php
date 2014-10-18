@@ -3,6 +3,7 @@
 namespace maui;
 
 /**
+ * @todo maybe I should strip the maui namespace from generated _type variables
  * Class SchemaValidatorToType - I am to be used with the mandatory _type field so that
  * 		_type field contains the class of object which saves the data. However, if _type
  * 		already marks a subclass of current model, the _type is not changed (otherwise
