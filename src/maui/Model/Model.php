@@ -156,7 +156,7 @@ abstract class Model implements \IteratorAggregate {
 
 		$collectionClassname = static::getCollectionClassname();
 
-		if (class_exists($collectionClassname)) {
+		if (($collectionClassname !== 'Collection') && class_exists($collectionClassname)) {
 			$ret = new $collectionClassname($data);
 		}
 		else {
@@ -341,13 +341,23 @@ abstract class Model implements \IteratorAggregate {
 			$excludedObjectIds[] = $objectHash;
 			$Schema = static::_getSchema();
 			foreach ($Schema as $eachKey=>$EachField) {
-				if (($EachField instanceof \SchemaFieldRelative) &&
-					($EachField->getReference() == \SchemaManager::REF_REFERENCE)) {
-					// save only if set. If set but empty, save() won't save it anyway
-					//if ($this->fieldIsSet($eachKey, $whichData)) {
-					if ($this->fieldNotNull($eachKey, $whichData)) {
-						$Relative = $this->_getRelative($eachKey, $whichData, false);
+				if (($EachField instanceof \SchemaFieldRelative) && ($this->fieldNotNull($eachKey, $whichData))) {
+					$Relative = $this->_getRelative($eachKey, $whichData, false);
+					if ($EachField->getReference() == \SchemaManager::REF_REFERENCE) {
+						// save only if set. If set but empty, save() won't save it anyway
+						//if ($this->fieldIsSet($eachKey, $whichData)) {
 						$Relative->save($whichData, true, $excludedObjectIds);
+					}
+					// if inline, still call beforesave()
+					else {
+						if ($EachField->isMulti()) {
+							/**
+							 * @var \Model $EachRelative
+							 */
+							foreach ($Relative as $EachRelative) {
+								$EachRelative->_beforeSave($whichData);
+							}
+						}
 					}
 				}
 
@@ -528,7 +538,12 @@ abstract class Model implements \IteratorAggregate {
 				}
 			}
 			elseif ($eachVal instanceof \Collection) {
-				throw new \Exception('TBI');
+				//throw new \Exception('TBI');
+				$tmpVal = array();
+				foreach ($eachVal as $eachValKey=>$eachModel) {
+					$tmpVal[$eachValKey] = $eachModel->flatData($whichData);
+				}
+				$eachVal = $tmpVal;
 			}
 			$data[$eachKey] = $eachVal;
 		}
@@ -670,16 +685,28 @@ abstract class Model implements \IteratorAggregate {
 	 * @return bool
 	 * @throws \Exception
 	 */
-	public function fieldIsSet($key, $whichData = \ModelManager::DATA_ALL) {
+	public function fieldIsSet($key, $whichData = \ModelManager::DATA_ALL, $noDefault=false) {
+
 		switch($whichData) {
 		case \ModelManager::DATA_CHANGED:
-			return array_key_exists($key, $this->_data);
+			$ret = array_key_exists($key, $this->_data);
+			break;
 		case \ModelManager::DATA_ORIGINAL:
-			return array_key_exists($key, $this->_originalData);
+			$ret = array_key_exists($key, $this->_originalData);
+			break;
 		case \ModelManager::DATA_ALL:
-			return array_key_exists($key, $this->_data) || array_key_exists($key, $this->_originalData);
+			$ret = array_key_exists($key, $this->_data) || array_key_exists($key, $this->_originalData);
+			break;
+		default:
+			throw new \Exception('invalid value (' . echon($whichData) . ' for $whichData in fieldIsSet()');
 		}
-		throw new \Exception('invalid value (' . echon($whichData) . ' for $whichData in fieldIsSet()');
+		if (!$ret && !$noDefault && $this->hasField($key)) {
+			$Field = static::_getSchema()->field($key);
+			if ($Field->getDefault($key, $this) !== null) {
+				$ret = true;
+			}
+		}
+		return $ret;
 	}
 
 	public function fieldNotNull($key, $whichData = \ModelManager::DATA_ALL) {

@@ -177,7 +177,7 @@ class SchemaFieldRelative extends \SchemaFieldAbstract {
 		if ($this->isMulti()) {
 			$data = array();
 			if (!empty($val)) {
-				foreach ($val as $eachVal) {
+				foreach ($val as $eachKey=>$eachVal) {
 					// if value is an ID only, put into data as id value as it can only be a reference
 					if ($eachVal instanceof \MongoId) {
 						$eachVal = array(\SchemaManager::KEY_ID => $eachVal);
@@ -191,7 +191,7 @@ class SchemaFieldRelative extends \SchemaFieldAbstract {
 					else {
 						throw new \Exception(echon($eachVal));
 					}
-					$data[] = $eachVal;
+					$data[$eachKey] = $eachVal;
 				}
 			}
 			$ret = $classname::getCollection($data);

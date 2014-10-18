@@ -235,6 +235,9 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 			$data = $this->_data[$key];
 			if (is_array($data)) {
 				$classname = $this->_getModelClassname();
+				if (isset($data['_type'])) {
+					$classname = $data['_type'];
+				}
 				$Model = new $classname($data, true);
 				$this->_data[$key] = $Model;
 			}

@@ -44,6 +44,9 @@ class SchemaFieldAttr extends \SchemaFieldAbstract {
 					case $eachKey === 'hasMax':
 						$SchemaAttr->_hasMax = (int) $eachVal;
 						break;
+					case $eachKey === 'default':
+						$SchemaAttr->_default = $eachVal;
+						break;
 					case is_numeric($eachKey) && ($eachVal === 'required'):
 						$SchemaAttr->_required = true;
 						break;
@@ -66,7 +69,7 @@ class SchemaFieldAttr extends \SchemaFieldAbstract {
 						throw new \Exception('TBI');
 						break;
 					default:
-						throw new \Exception(echon($eachKey,1) . ' / ' . echon($eachVal, 1));
+						throw new \Exception('invalid field descriptor: [' . echon($eachKey,1) . '] / ' . echon($eachVal, 1));
 						break;
 				}
 			}

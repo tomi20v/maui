@@ -36,6 +36,11 @@ abstract class SchemaFieldAbstract {
 	protected $_validators = array();
 
 	/**
+	 * @var mixed will be returned as default value. Can be overridden in getDefault()
+	 */
+	protected $_default = null;
+
+	/**
 	 * I return an instance of me created by $schema definition. This method must be implemented in child classes
 	 * 	(but should not be abstract as it is static...)
 	 * @param array $schema definition
@@ -103,5 +108,9 @@ abstract class SchemaFieldAbstract {
 	 * @return bool
 	 */
 	abstract public function beforeSave($key, $Model);
+
+	public function getDefault($key, $Model) {
+		return $this->_default;
+	}
 
 }

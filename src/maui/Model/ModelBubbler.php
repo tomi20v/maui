@@ -13,7 +13,7 @@ class ModelBubbler {
 
 	public function __construct($Model) {
 
-		$this->_model = $Model;
+		$this->_Model = $Model;
 
 	}
 
