@@ -653,7 +653,7 @@ abstract class Model implements \IteratorAggregate {
 	 * @param bool $asIs
 	 * @return null
 	 */
-	public function getField($key, $whichData=\ModelManager::DATA_CHANGED, $asIs=false) {
+	public function getField($key, $whichData=\ModelManager::DATA_ALL, $asIs=false) {
 		if ($this->hasAttr($key)) {
 			return $this->_getAttr($key, $whichData, $asIs);
 		}
@@ -741,12 +741,6 @@ abstract class Model implements \IteratorAggregate {
 		$val = isset($this->_data[$key]) ? $this->_data[$key] : null;
 		$originalVal = isset($this->_originalData[$key]) ? $this->_originalData[$key] : null;
 
-		// if not getting data as is, and field is multi, cast it to array
-		if (!$asIs && static::_getSchema()->getAttr($key)->isMulti()) {
-			$val = (array) $val;
-			$originalVal = (array) $originalVal;
-		}
-
 		switch ($whichData) {
 		case \ModelManager::DATA_CHANGED:
 			$ret = $val;
@@ -759,9 +753,14 @@ abstract class Model implements \IteratorAggregate {
 			break;
 		}
 
-		if (!$asIs && is_null($ret)) {
+		if (!$asIs) {
 			$Attr = static::_getSchema()->getAttr($key);
-			$ret = $Attr->getDefault($key, $this);
+			if (is_null($ret)) {
+				$ret = $Attr->getDefault($key, $this);
+			}
+			elseif ($Attr->isMulti()) {
+				$ret = (array) $ret;
+			}
 		}
 
 		return $ret;

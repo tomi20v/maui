@@ -2,6 +2,12 @@
 
 namespace maui;
 
+/**
+ * Class Schema
+ * @todo add some control of ordering fields
+ *
+ * @package maui
+ */
 class Schema implements \IteratorAggregate {
 
 	protected $_schema = array();

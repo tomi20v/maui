@@ -13,17 +13,17 @@ class SchemaValidatorIn extends \SchemaValidator {
 
 	public function validate($val, $Model=null) {
 		if (is_scalar($val)) {
-			return in_array($val, $this->_value);
+			return in_array($val, $this->_getValue($Model));
 		}
 		elseif (is_array($val)) {
-			$val = array_diff($val, $this->_value);
+			$val = array_diff($val, $this->_getValue($Model));
 			return empty($val);
 		}
 		return null;
 	}
 
 	public function getError($val, $Model=null) {
-		return 'not in {' . implode(', ', $this->_value) . '}';
+		return 'not in {' . implode(', ', $this->_getValue($Model)) . '}';
 	}
 
 	public function apply(&$val, $Model=null) {

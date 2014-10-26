@@ -8,7 +8,7 @@ class SchemaValidatorKeysEither extends \SchemaValidator {
 		if (is_array($val)) {
 			$alreadyHasOne = false;
 			foreach ($val as $eachKey=>$eachVal) {
-				if (in_array($eachKey, $this->_value)) {
+				if (in_array($eachKey, $this->_getValue($Model))) {
 					if ($alreadyHasOne) {
 						return false;
 					}
@@ -21,7 +21,7 @@ class SchemaValidatorKeysEither extends \SchemaValidator {
 	}
 
 	public function getError($val, $Model=null) {
-		return 'values can contain either but only one of (' . implode(', ', $this->_value[]) . '), but saw: ' . implode(', ', array_keys($val));
+		return 'can contain keys any but only one of (' . implode(', ', $this->_getValue($Model)) . '), but saw: ' . implode(', ', array_keys($val));
 	}
 
 	public function apply(&$val, $Model=null) {
@@ -33,7 +33,7 @@ class SchemaValidatorKeysEither extends \SchemaValidator {
 			return null;
 		}
 		$fromKey = null;
-		foreach (array_reverse($this->_value) as $eachPossibleKey) {
+		foreach (array_reverse($this->_getValue($Model)) as $eachPossibleKey) {
 			if (!isset($val[$eachPossibleKey])) {
 				continue;
 			}

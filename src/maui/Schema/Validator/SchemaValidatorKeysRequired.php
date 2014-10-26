@@ -6,7 +6,7 @@ class SchemaValidatorKeysRequired extends \SchemaValidator {
 
 	public function validate($val, $Model=null) {
 		if (is_array($val)) {
-			foreach ($this->_value as $eachRequiredKey) {
+			foreach ($this->_getValue($Model) as $eachRequiredKey) {
 				if (!isset($val[$eachRequiredKey])) {
 					return false;
 				}
@@ -17,7 +17,7 @@ class SchemaValidatorKeysRequired extends \SchemaValidator {
 	}
 
 	public function getError($val, $Model=null) {
-		return 'values must contain all keys from (' . implode(', ', $this->_value[]) . '), but saw: ' . implode(', ', array_keys($val));
+		return 'values must contain all keys from (' . implode(', ', $this->_getValue($Model)) . '), but saw: ' . implode(', ', array_keys($val));
 	}
 
 	public function apply(&$val, $Model=null) {

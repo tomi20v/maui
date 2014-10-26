@@ -109,8 +109,14 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 			$this->_data = $data;
 		}
 		else {
-			foreach ($data as $eachData) {
-				$this->add($eachData);
+			foreach ($data as $eachKey=>$eachData) {
+				if (is_numeric($eachKey)) {
+					$this->add($eachData, null, true);
+				}
+				else {
+					$this->add($eachData, $eachKey, false);
+				}
+
 			}
 		}
 		return $this;
@@ -123,21 +129,46 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	/**
 	 * add one or more models, by data, by model, or by collection
 	 *
-*@param $data
+	 * @param \Model|array $data
+	 * @param string $key
+	 * @param bool if false, I won't check if item is already in (probable to result in duplicates with numeric keys)
 	 * @return $this
 	 * @throws \Exception
 	 */
-	public function add($data, $checkDuplicates=true) {
+	public function add($data, $key, $checkDuplicates=true) {
 		// @todo support adding collections as well
 		if (is_array($data) || ($data instanceof \Model));
 		else {
 			throw new \Exception(echon($data) . ' / ' . echon($checkDuplicates));
 		}
+		if (is_numeric($key)) {
+			$key = null;
+		}
 		if ($checkDuplicates && $this->contains($data));
 		else {
-			$this->_data[] = $data;
+			if (is_null($key)) {
+				$this->_data[] = $data;
+			}
+			else {
+				$this->_data[$key] = $data;
+			}
 		}
 		return $this;
+	}
+
+	public function append($data, $checkDuplicates=true) {
+		if (empty($data)) {
+			return $this;
+		}
+		if ($data instanceof \Model) {
+			$data = (array) $data;
+		}
+		if (!is_array($data) && !($data instanceof \Collection)) {
+			throw new \Exception('cannot add: ' . echon($data));
+		}
+		foreach ($data as $eachKey=>$eachVal) {
+			$this->add($eachVal, $eachKey, $checkDuplicates);
+		}
 	}
 
 	public function remove($ModelOrModels) {

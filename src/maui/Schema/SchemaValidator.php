@@ -64,6 +64,39 @@ class SchemaValidator {
 	}
 
 	/**
+	 * I process $this->_value so if it refers a model's other field, it will be resolved
+	 * eg. 'fileReadable' => '=path' will resolve $value to $Model->path (if possible, if $Model is not null and has
+	 * an attribute of that name)
+	 * @param \Model $Model
+	 */
+	protected function _getValue(\Model $Model) {
+
+		$value = $this->_value;
+
+		// resolve values if Model is not null
+		if (is_string($value) && !is_null($Model)) {
+			if ($value[0] === '=') {
+				$key = substr($value, 1);
+				// I resolve only attributes
+				if ($Model->hasAttr($key)) {
+					// I get value $asIs=true
+					$value = $Model->getField($key, \ModelManager::DATA_ALL, true);
+				}
+			}
+			elseif ($value[1] === '~') {
+				$key = substr($value, 1);
+				if ($Model->hasAttr($key)) {
+					$value = $Model->getField($key, \ModelManager::DATA_ALL, true);
+				}
+				$value = is_array($value) ? count($value) : strlen($value);
+			}
+		}
+
+		return $value;
+
+	}
+
+	/**
 	 * I return true if value is valid for me. Eg. a ToInt validator will return true if $val can be cast to (int)
 	 * @param $val
 	 * @return bool

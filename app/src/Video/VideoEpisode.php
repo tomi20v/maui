@@ -3,7 +3,7 @@
 class VideoEpisode extends \Video {
 
 	protected static $_schema = array(
-		'@extends' => 'Video',
+		'@@extends' => 'Video',
 		'season',
 		'episode',
 	);

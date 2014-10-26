@@ -149,8 +149,8 @@ class SchemaManager extends \Schema {
 
 		$ret = new \Schema();
 
-		if (isset($schema['@extends'])) {
-			$extends = $schema['@extends'];
+		if (isset($schema['@@extends'])) {
+			$extends = $schema['@@extends'];
 			if (is_string($extends)) {
 				$extends = array($extends);
 			}
@@ -166,7 +166,7 @@ class SchemaManager extends \Schema {
 					$ret->_schema[$eachKey] = $eachField;
 				}
 			}
-			unset($schema['@extends']);
+			unset($schema['@@extends']);
 		}
 
 		foreach ($schema as $eachKey=>$eachVal) {
