@@ -11,13 +11,13 @@
 	],
 	"require": {
 		"tomi20v/echop": "dev-master"
-    },
+	},
 	"autoload": {
 		"classmap": [
 			"src/maui"
 		],
 		"files": [
 			"bootstrap.php"
-        ]
+		]
 	}
 }
