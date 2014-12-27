@@ -113,7 +113,7 @@ class SchemaFieldRelative extends \SchemaFieldAbstract {
 						$SchemaObject->_hasMax = (int) $eachVal;
 						break;
 					default:
-						throw new \Exception('unrecognized SchemaReference key ' . $eachKey);
+						throw new \Exception('unrecognized SchemaReference key ' . $eachKey . ' (val=' . $eachVal . ')');
 				}
 			}
 		}

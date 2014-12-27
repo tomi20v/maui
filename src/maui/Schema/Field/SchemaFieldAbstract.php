@@ -109,6 +109,12 @@ abstract class SchemaFieldAbstract {
 	 */
 	abstract public function beforeSave($key, $Model);
 
+	/**
+	 * I return default value (can be null)
+	 * @param $key
+	 * @param $Model
+	 * @return mixed
+	 */
 	public function getDefault($key, $Model) {
 		return $this->_default;
 	}

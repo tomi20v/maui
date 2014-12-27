@@ -239,7 +239,7 @@ class SchemaManager extends \Schema {
 
 	public static function filterBySchema($dataOrModel, $schemaNameOrSchema) {
 		if ($dataOrModel instanceof \Model) {
-			$dataOrModel = $dataOrModel->getData(true);
+			$dataOrModel = $dataOrModel->Data()->getData(true);
 		}
 		if (!is_array($dataOrModel)) {
 			throw new \Exception('cannot use for data: ' . echon($dataOrModel));

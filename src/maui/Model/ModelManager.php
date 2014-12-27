@@ -46,6 +46,7 @@ class ModelManager extends \Model {
 	}
 
 	/**
+	 * @todo rewrite this (currenty unused) method (as static _flatData does not exist any more)
 	 * I compare two objects or similar data. If one argument is only a string, then I match only the ID. Otherwise,
 	 * 		I check if $m1 matches $m2 (so $m2 might have extra data, but contains all of $m1). Input types:
 	 *  string - treated as ID
@@ -55,7 +56,7 @@ class ModelManager extends \Model {
 	 * @param mixed $m2
 	 * @return bool|null
 	 */
-	public static function compare($m1, $m2, $strict=false) {
+	public static function OBS_compare($m1, $m2, $strict=false) {
 		// if one of them string ID, then compare by just ID
 		if (is_string($m1) || is_string($m2)) {
 			// if $m2 is the string, swap them
@@ -77,17 +78,19 @@ class ModelManager extends \Model {
 		else {
 
 			if (is_array($m1)) {
-				$m1 = \maui\Model::_flatData($m1, \ModelManager::DATA_ALL);
+//				$m1 = \maui\Model::_flatData($m1, \ModelManager::DATA_ALL);
+				$m1 = \ModelData::flatArrData($m1, \ModelManager::DATA_ALL);
 			}
 			elseif ($m1 instanceof \Model) {
-				$m1 = $m1->flatData(\ModelManager::DATA_ALL, true, true);
+				$m1 = $m1->Data()->flatData(\ModelManager::DATA_ALL, true, true);
 			}
 			else return null;
 			if (is_array($m2)) {
-				$m2 = \maui\Model::_flatData($m2, \ModelManager::DATA_ALL);
+//				$m2 = \maui\Model::_flatData($m2, \ModelManager::DATA_ALL);
+				$m2 = \ModelData::flatArrData($m2, \ModelManager::DATA_ALL);
 			}
 			elseif ($m2 instanceof \Model) {
-				$m2 = $m2->flatData(\ModelManager::DATA_ALL, true, true);
+				$m2 = $m2->Data()->flatData(\ModelManager::DATA_ALL, true, true);
 			}
 			else return null;
 

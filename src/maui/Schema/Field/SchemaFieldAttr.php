@@ -125,7 +125,7 @@ class SchemaFieldAttr extends \SchemaFieldAbstract {
 		$errors = array();
 		if (is_null($val) || ($this->isMulti() && ($val===array()))) {
 			if ($this->_required) {
-				$errors[] = $this->_getRequiredError();
+				$errors[] = $this->getRequiredError();
 			}
 		}
 		else {

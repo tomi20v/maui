@@ -69,7 +69,7 @@ class SchemaValidator {
 	 * an attribute of that name)
 	 * @param \Model $Model
 	 */
-	protected function _getValue(\Model $Model) {
+	protected function _getValue($Model) {
 
 		$value = $this->_value;
 
@@ -78,15 +78,15 @@ class SchemaValidator {
 			if ($value[0] === '=') {
 				$key = substr($value, 1);
 				// I resolve only attributes
-				if ($Model->hasAttr($key)) {
+				if ($Model->Data()->hasAttr($key)) {
 					// I get value $asIs=true
-					$value = $Model->getField($key, \ModelManager::DATA_ALL, true);
+					$value = $Model->Data()->getField($key, \ModelManager::DATA_ALL, true);
 				}
 			}
 			elseif ($value[1] === '~') {
 				$key = substr($value, 1);
-				if ($Model->hasAttr($key)) {
-					$value = $Model->getField($key, \ModelManager::DATA_ALL, true);
+				if ($Model->Data()->hasAttr($key)) {
+					$value = $Model->Data()->getField($key, \ModelManager::DATA_ALL, true);
 				}
 				$value = is_array($value) ? count($value) : strlen($value);
 			}
@@ -125,6 +125,16 @@ class SchemaValidator {
 	 */
 	public function apply(&$val, $Model=null) {
 		return true;
+	}
+
+	/**
+	 * I return filtered value suitable for this field. Normally this just requires checking if that value validates
+	 * @param mixed $val
+	 * @param \Model|null $Model
+	 * @return null
+	 */
+	public function filter($val, $Model=null) {
+		return $this->validate($val, $Model) ? $val : null;
 	}
 
 	/**

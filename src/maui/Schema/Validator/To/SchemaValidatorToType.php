@@ -24,20 +24,21 @@ class SchemaValidatorToType extends \SchemaValidatorTo {
 		return 'oops';
 	}
 
-	// @TODO I should set the minimal sufficient type by schema. Eg. if an object doesn't use its specific fields then save as its parent
+	/**
+	 * I apply $val if not empty. If empty, will set automaticly. Will not overwrite _type if it is set and is a subclass
+	 * 		of $val
+	 * @param string|null $val
+	 * @param \Model|null $Model
+	 * @return bool|mixed|null
+	 */
 	public function apply(&$val, $Model=null) {
-
-		// set only if object is not empty
-		if (!empty($Model) && $Model->isEmpty('_type')) {
-			// @todo this won't set the _type to empty just give a validation error...
-			return null;
-		}
 
 		if (empty($val)) {
 			if (is_object($Model)) {
 				$val = get_class($Model);
 			}
 			else {
+				// @todo I think this should just be an error...?
 				debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); die('TBI');
 			}
 		}
@@ -55,9 +56,9 @@ class SchemaValidatorToType extends \SchemaValidatorTo {
 	}
 
 	public function beforeSave($key, $Model) {
-		$val = $Model->field($key);
-		$res = $this->apply($val, $Model);
-		return $Model->field($key, $val);
+		$val = $Model->Data()->getField($key);
+		$this->apply($val, $Model);
+		return $Model->Data()->setField($key, $val);
 	}
 
 }

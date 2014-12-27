@@ -1,6 +1,8 @@
 <?php
 
-define('MAUI_ROOT', dirname(__FILE__));
+if (!defined('MAUI_ROOT')) {
+	define('MAUI_ROOT', dirname(__FILE__));
+}
 
 function Maui_autoload($classname) {
 	if (!strrpos($classname, '\\') &&
@@ -8,7 +10,7 @@ function Maui_autoload($classname) {
 		class_alias($originalClassname, $classname);
 	}
 }
-spl_autoload_register('Maui_autoload');
+spl_autoload_register('Maui_autoload', true, true);
 
 date_default_timezone_set('Europe/Berlin');
 

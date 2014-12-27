@@ -59,7 +59,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public static function getDbCollectionName($modelClassname=null) {
 		if (!empty($modelClassname)) {
-			$collectionName = $modelClassname::getCollectionClassName();
+			$collectionName = $modelClassname::getCollectionName();
 		}
 		else {
 			$collectionName = get_called_class();
@@ -137,7 +137,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public function add($data, $key, $checkDuplicates=true) {
 		// @todo support adding collections as well
-		if (is_array($data) || ($data instanceof \Model));
+		if (is_array($data) || ($data instanceof \maui\Model));
 		else {
 			throw new \Exception(echon($data) . ' / ' . echon($checkDuplicates));
 		}
@@ -161,7 +161,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 			return $this;
 		}
 		if ($data instanceof \Model) {
-			$data = (array) $data;
+			$data = [$data];
 		}
 		if (!is_array($data) && !($data instanceof \Collection)) {
 			throw new \Exception('cannot add: ' . echon($data));
@@ -183,7 +183,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public function contains($ModelOrData) {
 		$data = $ModelOrData instanceof \Model
-			? $ModelOrData->getData(true, \ModelManager::DATA_ALL, true)
+			? $ModelOrData->Data()->getData(true, \ModelManager::DATA_ALL, true)
 			: $ModelOrData;
 		foreach ($this->_data as $eachModel) {
 			if (\Model::match($eachModel, $data)) {
@@ -262,12 +262,19 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 		if (!is_scalar($key)) {
 			throw new \Exception();
 		}
+		if ($key === -1) {
+			$keys = array_slice(array_keys($this->_data), -1);
+			$key = reset($keys);
+		}
 		if (isset($this->_data[$key])) {
 			$data = $this->_data[$key];
 			if (is_array($data)) {
 				$classname = $this->_getModelClassname();
 				if (isset($data['_type'])) {
 					$classname = $data['_type'];
+				}
+				if (strpos($classname, 'Abstract') !== false) {
+					return null;
 				}
 				$Model = new $classname($data, true);
 				$this->_data[$key] = $Model;
@@ -287,7 +294,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 		$data = array();
 		foreach ($this->_data as $eachKey=>$eachVal) {
 			$data[$eachKey] = $eachVal instanceof \Model
-				? $eachVal->getData(true, $whichData, $asIs)
+				? $eachVal->Data()->getData(true, $whichData, $asIs)
 				: $eachVal;
 		}
 		return $data;

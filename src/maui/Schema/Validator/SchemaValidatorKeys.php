@@ -16,6 +16,7 @@ class SchemaValidatorKeys extends \SchemaValidator {
 	}
 
 	public function apply(&$val, $Model=null) {
+		// should be $val = is_array($val) ? $val : [$val]; return true; no ?
 		return is_array($val) ? true : array($val);
 	}
 

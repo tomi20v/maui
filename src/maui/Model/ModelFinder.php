@@ -29,6 +29,16 @@ class ModelFinder {
 	}
 
 	/**
+	 * I clear a field's criteria (if any)
+	 * @param $field
+	 * @return $this
+	 */
+	public function clear($field) {
+		unset($this->_criteria[$field]);
+		return $this;
+	}
+
+	/**
 	 * I return a Model object found by the criteria
 	 * @return \Model
 	 */
