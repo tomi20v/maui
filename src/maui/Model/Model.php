@@ -5,8 +5,6 @@ namespace maui;
 // @todo remove ID flattening when implementing REF_AUTO so the same ID representation can match ID only and full object as well
 abstract class Model implements \IteratorAggregate {
 
-	use \maui\TraitHasLabel;
-
 	/**
 	 * @var array[] initial schema reference. will be unset. To use dynamic schemas override static function __init()
 	 */
