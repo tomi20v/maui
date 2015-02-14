@@ -382,7 +382,6 @@ class ModelData extends Model {
 			}
 			elseif (($eachVal instanceof \Model) && ($EachField instanceof \SchemaFieldRelative)) {
 				$eachVal = $EachField->getReference() === \SchemaManager::REF_INLINE
-//					? $eachVal->flatData($whichData)
 					? $eachVal->Data()->flatData($whichData)
 					: (is_null($eachVal->_id) ? null : '' . $eachVal->_id);
 			}
@@ -396,10 +395,8 @@ class ModelData extends Model {
 				}
 			}
 			elseif ($eachVal instanceof \Collection) {
-				//throw new \Exception('TBI');
 				$tmpVal = array();
 				foreach ($eachVal as $eachValKey=>$eachModel) {
-//					$tmpVal[$eachValKey] = $eachModel->flatData($whichData);
 					$tmpVal[$eachValKey] = $eachModel->Data()->flatData($whichData);
 				}
 				$eachVal = $tmpVal;

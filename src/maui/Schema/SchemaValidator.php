@@ -64,6 +64,25 @@ class SchemaValidator {
 	}
 
 	/**
+	 * @return bool I return if validator depends on another fields value from the model or not
+	 */
+	public function resolvesToModel() {
+		$pattern = '/^[=~]/';
+		if (is_string($this->_value)) {
+			return preg_match($pattern, $this->_value) ? true : false;
+		}
+		elseif (is_array($this->_value)) {
+			foreach ($this->_value as $eachValue) {
+				if (!preg_match($pattern, $eachValue)) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * I process $this->_value so if it refers a model's other field, it will be resolved
 	 * eg. 'fileReadable' => '=path' will resolve $value to $Model->path (if possible, if $Model is not null and has
 	 * an attribute of that name)
@@ -83,7 +102,7 @@ class SchemaValidator {
 					$value = $Model->Data()->getField($key, \ModelManager::DATA_ALL, true);
 				}
 			}
-			elseif ($value[1] === '~') {
+			elseif ($value[0] === '~') {
 				$key = substr($value, 1);
 				if ($Model->Data()->hasAttr($key)) {
 					$value = $Model->Data()->getField($key, \ModelManager::DATA_ALL, true);
@@ -146,6 +165,13 @@ class SchemaValidator {
 	 */
 	public function beforeSave($key, $Model) {
 		return true;
+	}
+
+	/**
+	 * @return mixed[] return meta info for frontend admin engine
+	 */
+	public function toMeta() {
+		return [];
 	}
 
 }

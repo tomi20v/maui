@@ -2,9 +2,7 @@
 
 namespace maui;
 
-class SchemaValidatorToBool extends \SchemaValidatorToInt {
-
-	const FORMAT = '/^[0-9a-f]{24}$/';
+class SchemaValidatorToBool extends \SchemaValidatorTo {
 
 	public function validate($val, $Model=null) {
 		return $val ? true : false;
