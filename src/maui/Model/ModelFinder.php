@@ -54,12 +54,13 @@ class ModelFinder {
 
 	/**
 	 * I return a collection of matching elements
+	 * @param ModelFinderConstraints $ModelFinderConstraints
 	 * @return \Collection
 	 */
-	public function findAll($skip=null, $limit=null, $fields=array()) {
+	public function findAll($ModelFinderConstraints=null) {
 		$modelClassname = $this->_classname;
 		$Collection = $modelClassname::getCollection();
-		$Collection->loadBy($this->_criteria, $skip, $limit, $fields);
+		$Collection->loadBy($this->_criteria, $ModelFinderConstraints);
 		return $Collection;
 	}
 

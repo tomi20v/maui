@@ -27,6 +27,16 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	protected $_data = array();
 
 	/**
+	 * @var int will be filled from $Cursor->count(true)
+	 */
+	protected $_matchedCount = null;
+
+	/**
+	 * @var int will be filled by $Cursor->count()
+	 */
+	protected $_pagesCount = null;
+
+	/**
 	 * @var array a simple and dumb array of filters, applicable for mongoDB
 	 */
 	protected $_filters = array();
@@ -211,8 +221,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 * @param int $limit
 	 * @return $this|null
 	 */
-	public function loadByFilters($skip=0, $limit=0) {
-		$DbCollection = $this->_getDbCollection();
+	public function loadByFilters($ModelFinderConstraints=null) {
 		$filterData = $this->_filters;
 		if (empty($filterData)) {
 			return null;
@@ -225,15 +234,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 				'$or' => $filterData,
 			);
 		}
-		$cursor = $DbCollection->find($filterData);
-		if ($skip) {
-			$cursor->skip($skip);
-		}
-		if ($limit) {
-			$cursor->limit($limit);
-		}
-		$this->_data = iterator_to_array($cursor);
-		return $this;
+		return $this->loadBy($filterData, $ModelFinderConstraints);
 	}
 
 	/**
@@ -257,9 +258,13 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	/**
 	 * I load by data directly (data can be a mongo query document in array)
 	 * @param $loadData
+	 * @param \ModelFinderConstraints $ModelFinderConstraints
 	 * @return $this
 	 */
-	public function loadBy($loadData, $skip=null, $limit=null, $fields=array()) {
+	public function loadBy($loadData, $ModelFinderConstraints=null) {
+		$fields = $ModelFinderConstraints instanceof \ModelFinderConstraints
+			? $ModelFinderConstraints->fields
+			: [];
 		if (!empty($fields)) {
 			if (!in_array('_type', $fields)) {
 				array_unshift($fields, '_type');
@@ -273,12 +278,19 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 			throw new \Exception('TBI');
 		}
 		else {
-			if ($skip) {
-				$Cursor->skip($skip);
+			if ($ModelFinderConstraints instanceof \ModelFinderConstraints) {
+				if (!empty($ModelFinderConstraints->sortFields)) {
+					$Cursor->sort($ModelFinderConstraints->sortFields);
+				}
+				if ($ModelFinderConstraints->start) {
+					$Cursor->skip($ModelFinderConstraints->start);
+				}
+				if ($ModelFinderConstraints->limit) {
+					$Cursor->limit($ModelFinderConstraints->limit);
+				}
 			}
-			if ($limit) {
-				$Cursor->limit($limit);
-			}
+			$this->_matchedCount = $Cursor->count(false);
+			$this->_pagesCount = $Cursor->count(true);
 			$data = iterator_to_array($Cursor);
 			$this->apply($data, false);
 		}
@@ -329,6 +341,15 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 				: $eachVal;
 		}
 		return $data;
+	}
+
+	/**
+	 * I return count() like $Cursor would have had
+	 * @param bool $all
+	 * @return int
+	 */
+	public function getCount($all=false) {
+		return $all ? $this->_matchedCount : $this->_pagesCount;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////
