@@ -128,6 +128,14 @@ abstract class Model implements \IteratorAggregate {
 
 	}
 
+	/**
+	 * I return all my fieldnames
+	 * @return string[]
+	 */
+	public static function getFieldnames() {
+		return \SchemaManager::getFieldnames(get_called_class());
+	}
+
 	////////////////////////////////////////////////////////////////////////////////
 	//	collection
 	////////////////////////////////////////////////////////////////////////////////
@@ -152,7 +160,7 @@ abstract class Model implements \IteratorAggregate {
 	/**
 	 * I return empty collection for this class
 	 * @param null $data
-	 * @return mixed
+	 * @return \Collection
 	 * @extendMe eg. in case reusing a collection class for multiple models
 	 */
 	public static function getCollection($data=null) {

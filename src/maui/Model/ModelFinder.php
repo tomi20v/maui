@@ -52,6 +52,17 @@ class ModelFinder {
 		return $Model;
 	}
 
+	/**
+	 * I return a collection of matching elements
+	 * @return \Collection
+	 */
+	public function findAll($skip=null, $limit=null, $fields=array()) {
+		$modelClassname = $this->_classname;
+		$Collection = $modelClassname::getCollection();
+		$Collection->loadBy($this->_criteria, $skip, $limit, $fields);
+		return $Collection;
+	}
+
 	////////////////////////////////////////////////////////////////////////////////
 	// comparison
 	////////////////////////////////////////////////////////////////////////////////

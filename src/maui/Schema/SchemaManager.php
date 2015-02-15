@@ -59,7 +59,7 @@ class SchemaManager extends \Schema {
 	/**
 	 * @var \Schema[string] I hold instances of Schema objects keyed by classname
 	 */
-	protected static $_pool = array();
+	protected static $_pool = [];
 
 	protected static $_instance;
 
@@ -80,7 +80,7 @@ class SchemaManager extends \Schema {
 
 	/**
 	 * I return the schema for $classname
-	 * @param string $context
+	 * @param string|mixed $context
 	 * @return \Schema
 	 * @throws \Exception
 	 */
@@ -93,6 +93,23 @@ class SchemaManager extends \Schema {
 			throw new \Exception('schema ' . $context . ' not found');
 		}
 		return static::$_pool[$context];
+	}
+
+	/**
+	 * I return names of fields in a schema
+	 * @param string|mixed$context
+	 * @return string[]
+	 * @throws \Exception
+	 */
+	public static function getFieldnames($context) {
+		if (is_object($context)) {
+			$context = get_class($context);
+		}
+		$context = static::_toContext($context);
+		if (!array_key_exists($context, self::$_pool)) {
+			throw new \Exception('schema ' . $context . ' not found');
+		}
+		return static::$_pool[$context]->fieldnames();
 	}
 
 	/**

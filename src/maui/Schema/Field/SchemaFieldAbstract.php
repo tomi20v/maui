@@ -49,6 +49,7 @@ abstract class SchemaFieldAbstract {
 	 */
 	public static function from($schema, $context, $key=null) {
 		// this
+		throw new \Exception('TBI');
 		return null;
 	}
 

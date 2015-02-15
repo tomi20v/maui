@@ -59,7 +59,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public static function getDbCollectionName($modelClassname=null) {
 		if (!empty($modelClassname)) {
-			$collectionName = $modelClassname::getCollectionName();
+			$collectionName = $modelClassname::getDbCollectionName();
 		}
 		else {
 			$collectionName = get_called_class();
@@ -254,6 +254,37 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 		}
 	}
 
+	/**
+	 * I load by data directly (data can be a mongo query document in array)
+	 * @param $loadData
+	 * @return $this
+	 */
+	public function loadBy($loadData, $skip=null, $limit=null, $fields=array()) {
+		if (!empty($fields)) {
+			if (!in_array('_type', $fields)) {
+				array_unshift($fields, '_type');
+			}
+		}
+		$DbCollection = static::_getDbCollection();
+		$Cursor = $DbCollection->find($loadData, $fields);
+		// I might not want to overwrite data if not found... to be checked later
+		if (is_null($Cursor)) {
+			// do nothing for now, see comment
+			throw new \Exception('TBI');
+		}
+		else {
+			if ($skip) {
+				$Cursor->skip($skip);
+			}
+			if ($limit) {
+				$Cursor->limit($limit);
+			}
+			$data = iterator_to_array($Cursor);
+			$this->apply($data, false);
+		}
+		return $this;
+	}
+
 	////////////////////////////////////////////////////////////////////////////////
 	// data
 	////////////////////////////////////////////////////////////////////////////////
@@ -287,10 +318,10 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	/**
 	 * I return data of all members
 	 *
-*@param bool $whichData just to pass by to children
+	 * @param bool $whichData just to pass by to children
 	 * @return array
 	 */
-	public function getData($whichData = true, $asIs=true) {
+	public function getData($whichData = \ModelManager::DATA_ALL, $asIs=true) {
 		$data = array();
 		foreach ($this->_data as $eachKey=>$eachVal) {
 			$data[$eachKey] = $eachVal instanceof \Model

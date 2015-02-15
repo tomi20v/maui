@@ -33,7 +33,7 @@ class Schema implements \IteratorAggregate {
 	 * I return all fields
 	 * @return array
 	 */
-	public function fields() {
+	public function fieldnames() {
 		return array_keys($this->_schema);
 	}
 
