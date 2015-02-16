@@ -24,7 +24,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 * @var mixed[] I hold an array of items in collection, either their data only or
 	 * 		their instance after they're constructed
 	 */
-	protected $_data = array();
+	protected $_data = [];
 
 	/**
 	 * @var int will be filled from $Cursor->count(true)
@@ -39,7 +39,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	/**
 	 * @var array a simple and dumb array of filters, applicable for mongoDB
 	 */
-	protected $_filters = array();
+	protected $_filters = [];
 
 	public function __construct($data=null, $modelClassname=null) {
 		if (!is_null($modelClassname)) {
@@ -230,9 +230,9 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 			$filterData = reset($filterData);
 		}
 		else {
-			$filterData = array(
+			$filterData = [
 				'$or' => $filterData,
-			);
+			];
 		}
 		return $this->loadBy($filterData, $ModelFinderConstraints);
 	}
@@ -244,7 +244,7 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 */
 	public function filter($filter) {
 		if (is_null($filter)) {
-			$this->_filters = array();
+			$this->_filters = [];
 		}
 		elseif (is_array($filter)) {
 			// note I don't even do syntax check. use at own risk
@@ -334,11 +334,27 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	 * @return array
 	 */
 	public function getData($whichData = \ModelManager::DATA_ALL, $asIs=true) {
-		$data = array();
+		$data = [];
 		foreach ($this->_data as $eachKey=>$eachVal) {
-			$data[$eachKey] = $eachVal instanceof \Model
+			$data[$eachKey] = $eachVal instanceof \maui\Model
 				? $eachVal->Data()->getData(true, $whichData, $asIs)
 				: $eachVal;
+		}
+		return $data;
+	}
+
+	/**
+	 * I return flattened data of my models
+	 * @param int $whichData
+	 * @return array
+	 */
+	public function flatData($whichData = \ModelManager::DATA_ALL) {
+		$data = [];
+		foreach ($this->_data as $eachKey=>$eachVal) {
+			$data[] = $eachVal instanceof \maui\Model
+				? $eachVal->Data()->flatData($whichData)
+				: \ModelData::flatArrData($this->_modelClassname, $eachVal);
+//				: $eachVal;
 		}
 		return $data;
 	}

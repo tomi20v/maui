@@ -349,13 +349,50 @@ class ModelData extends Model {
 	}
 
 	/**
-	 * @todo implement me?
+	 * @todo implement me? - I could implement the core of flatData() which then would be just a wrapper
+	 * I shall flatten data in an array (which might still contain references to other objects)
 	 * @param $arrData
 	 * @param int $whichData
 	 * @throws \Exception
 	 */
-	public static function flatArrData($arrData, $whichData=\ModelManager::DATA_ALL) {
-		throw new \Exception('TBI');
+	public static function flatArrData($modelClassname, $arrData, $whichData=\ModelManager::DATA_ALL) {
+
+		$data = [];
+
+		$Schema = \SchemaManager::getSchema($modelClassname);
+
+		foreach ($Schema as $eachKey=>$EachField) {
+			if (!array_key_exists($eachKey, $arrData)) {
+				continue;
+			}
+			$eachVal = $arrData[$eachKey];
+			if (is_null($eachVal));
+			elseif (($eachVal instanceof \Model) && ($EachField instanceof \SchemaFieldRelative)) {
+				$eachVal = $EachField->getReference() === \SchemaManager::REF_INLINE
+					? $eachVal->Data()->flatData($whichData)
+					: (is_null($eachVal->_id) ? null : '' . $eachVal->_id);
+			}
+			elseif ($EachField->isMulti() && is_array($eachVal)) {
+				foreach ($eachVal as $eachValKey=>$eachValVal) {
+					if (($eachValVal instanceof \Model) && ($EachField instanceof \SchemaFieldRelative)) {
+						$eachVal[$eachValKey] = $EachField->getReference() === \SchemaManager::REF_INLINE
+							? $eachValVal->Data()->flatData($whichData)
+							: '' . $eachValVal->_id;
+					}
+				}
+			}
+			elseif ($eachVal instanceof \Collection) {
+				$eachVal = $eachVal->flatData();
+			}
+			elseif ($eachVal instanceof \MongoId) {
+				$eachVal = '' . $eachVal;
+			}
+			// @todo I shall flatten IDs and other objects here!?!?!
+			$data[$eachKey] = $eachVal;
+		}
+
+		return $data;
+
 	}
 
 	/**
@@ -368,12 +405,12 @@ class ModelData extends Model {
 	 */
 	final public function flatData($whichData=\ModelManager::DATA_ALL) {
 
-		$data = array();
+		$data = [];
 
 		$Schema = $this->_Model->_getSchema();
 
 		foreach ($Schema as $eachKey=>$EachField) {
-			if (!$this->fieldIsSet($eachKey, $whichData)) {
+			if (!$this->fieldNotNull($eachKey, $whichData)) {
 				continue;
 			}
 			$eachVal = $this->getField($eachKey, $whichData, true);
@@ -395,11 +432,10 @@ class ModelData extends Model {
 				}
 			}
 			elseif ($eachVal instanceof \Collection) {
-				$tmpVal = array();
-				foreach ($eachVal as $eachValKey=>$eachModel) {
-					$tmpVal[$eachValKey] = $eachModel->Data()->flatData($whichData);
-				}
-				$eachVal = $tmpVal;
+				$eachVal = $eachVal->flatData();
+			}
+			elseif ($eachVal instanceof \MongoId) {
+				$eachVal = '' . $eachVal;
 			}
 			$data[$eachKey] = $eachVal;
 		}
