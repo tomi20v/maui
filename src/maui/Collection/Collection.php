@@ -351,10 +351,9 @@ class Collection implements \Arrayaccess, \Iterator, \Countable {
 	public function flatData($whichData = \ModelManager::DATA_ALL) {
 		$data = [];
 		foreach ($this->_data as $eachKey=>$eachVal) {
-			$data[] = $eachVal instanceof \maui\Model
+			$data[$eachKey] = $eachVal instanceof \maui\Model
 				? $eachVal->Data()->flatData($whichData)
 				: \ModelData::flatArrData($this->_modelClassname, $eachVal);
-//				: $eachVal;
 		}
 		return $data;
 	}
