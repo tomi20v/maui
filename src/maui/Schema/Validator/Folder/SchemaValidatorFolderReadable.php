@@ -12,8 +12,8 @@ class SchemaValidatorFolderReadable extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
-		return 'folder not readable: ' . $val;
+	public function getError($val=null, $Model=null) {
+		return 'folder not readable' . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

@@ -92,7 +92,7 @@ class SchemaValidator {
 
 		$value = $this->_value;
 
-		// resolve values if Model is not null
+		// resolve value references if Model is not null
 		if (is_string($value) && !is_null($Model)) {
 			if ($value[0] === '=') {
 				$key = substr($value, 1);
@@ -125,14 +125,20 @@ class SchemaValidator {
 		return true;
 	}
 
+	protected function _getSawValueString($doesApply, $val, $Model) {
+		return $doesApply
+			? ' but saw: ' . echon($val, true, null, 1)
+			: '';
+	}
+
 	/**
 	 * return error message. Field key shall be prepended later
 	 * @param $val
 	 * @return string
 	 * @extendMe
 	 */
-	public function getError($val, $Model=null) {
-		return 'failed ' . get_called_class() . '(' . $this->_value . ')';
+	public function getError($val=null, $Model=null) {
+		return 'failed ' . get_called_class() . '(' . echon($this->_value) . ')' . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	/**

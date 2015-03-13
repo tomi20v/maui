@@ -1,4 +1,4 @@
-Maui is a Minimal MongoDB mapper for PHP
+Maui is a minimal MongoDB mapper for PHP
 Note this is a hobby project and is not and is not meant to be complete.
 Originally just a weekend project, now I have some days of work in it.
 
@@ -7,8 +7,8 @@ The basic idea is to provide a framework:
  - easily create and access data and relatives
  - basic CRUD (hard-coded MongoDB) for nested objects, including deep saves of
     inline and referred data
- - basic validation
- - be extensible for sub-projects
+ - validation, concept: define fields by validators
+ - be extensible for projects which use it
 
 Files, folders:
  app - sample app pieces
@@ -21,320 +21,313 @@ Files, folders:
  tests - some sporadic tests
  vendor/tomi20v/echop - pretty printer. Not necessary indeed
 
-examples:
+examples: create a Page object with known property, and load by that
 
-    $Video = new \Video(array('title' => 'First movie object'));
-    $Video->load();
+	$Page = new \ModPageModel(['slug'=>'index']);
+	$Page->load();
 
-    echop($Video->title);
+	echop($Page->title);
 
-    echop($Video->getData(\ModelManager::DATA_ALL);
+	echop($Page);
 
 will produce something like:
 
-    string(18) First movie object
+    string(26) Demo Application home page
 
-    Video extends Maui\Model (
-        const [REFERRED] => auto
-        static [_schema:protected] => NULL
-        [_originalData:protected] => Array(6) (
-            [_id] => MongoId Object (
-                [$id:public] => string(24) 53eeb9b526e34be00595d011
-            )
-            [user] => string(10) ArcheAdmin
-            [title] => string(18) First movie object
-            [subtitle] => string(19) First subtitle ever
-            [length] => string(2) 54
-            [staff] => Array(2) (
-                [0] => Array(1) (
-                    [_id] => MongoId Object (
-                        [$id:public] => string(24) 53f27f9126e34bb1049f5d4c
-                    )
-                )
-                [1] => Array(1) (
-                    [name] => string(14) Steven McQueen
-                )
-            )
-        )
-        [_data:protected] => Array()
-        [_isValidated:protected] => Array()
-        [_validationErrors:protected] => Array()
-        [_label:protected] => NULL
-    )
+	ninja\ModPageModel extends ninja\ModAbstractModel (
+		const [JS_HEAD] => HEAD
+		const [JS_FOOT] => FOOT
+		static [_schema:protected] => bool(true)
+		[_Asset:protected] => NULL
+		[_Module:protected] => NULL
+		[_originalData:protected] => Array(8) (
+			[slug] => string(5) index
+			[_id] => MongoId Object (
+				[$id:public] => string(24) 55023718ace34b2f0a6819cd
+			)
+			[_type] => string(18) ninja\ModPageModel
+			[Parent] => string(24) 55023718ace34b2f0a6819cb
+			[published] => bool(true)
+			[Modules] => Array(1) (
+				[columns] => Array(3) (
+					[_type] => string(23) ninja\ModContainerModel
+					[Contents] => Array(3) (
+						[left] => string(38)
+	Left dummy
 
-now, continue code:
+						[middle] => string(40)
+	Middle dummy
 
-    $Staff1 = $Video->staff->at(1);
-    $Staff1->name = 'Steve McQueen';
+						[right] => string(39)
+	Right dummy
 
-    echop($Video);
+					)
+					[cssClasses] => Array(1) (
+						[0] => string(3) row
+					)
+				)
+			)
+			[Root] => string(24) 55023718ace34b2f0a6819cb
+			[title] => string(26) Demo Application home page
+		)
+		[_data:protected] => Array()
+	)
+
+now, add an (otherwise ambigous) module:
+
+    $Page->Modules->add(['title'=>'New module', 'html'=>'<strong>asd</strong>'], 'newModule');
+
+    echop($Page);
 
 you get something like this:
 
-    Video extends Maui\Model (
-        const [REFERRED] => auto
-        static [_schema:protected] => NULL
-        [_originalData:protected] => Array(6) (
-            [_id] => MongoId Object (
-                [$id:public] => string(24) 53eeb9b526e34be00595d011
-            )
-            [user] => string(10) ArcheAdmin
-            [title] => string(18) First movie object
-            [subtitle] => string(19) First subtitle ever
-            [length] => string(2) 54
-            [staff] => Array(2) (
-                [0] => Array(1) (
-                    [_id] => MongoId Object (
-                        [$id:public] => string(24) 53f27f9126e34bb1049f5d4c
-                    )
-                )
-                [1] => Array(1) (
-                    [name] => string(14) Steven McQueen
-                )
-            )
-        )
-        [_data:protected] => Array(1) (
-            [staff] => Maui\Collection Object (
-                [_modelClassname:protected] => string(5) Staff
-                [_data:protected] => Array(3) (
-                    [0] => Array(1) (
-                        [_id] => MongoId Object (
-                            [$id:public] => string(24) 53f27f9126e34bb1049f5d4c
-                        )
-                    )
-                    [1] => Staff extends User (
-                        const [REFERRED] => auto
-                        static [_schema:protected] => NULL
-                        static [_referred:protected] => string(6) inline
-                        [_originalData:protected] => Array(1) (
-                            [name] => string(14) Steven McQueen
-                        )
-                        [_data:protected] => Array(1) (
-                            [name] => string(13) Steve McQueen
-                        )
-                        [_isValidated:protected] => Array()
-                        [_validationErrors:protected] => Array()
-                        [_label:protected] => NULL
-                    )
-                    [2] => Array(1) (
-                        [name] => string(6) Smokey
-                    )
-                )
-                [_filters:protected] => Array()
-            )
-        )
-        [_isValidated:protected] => Array()
-        [_validationErrors:protected] => Array()
-        [_label:protected] => NULL
-    )
+	ninja\ModPageModel extends ninja\ModAbstractModel (
+		const [JS_HEAD] => HEAD
+		const [JS_FOOT] => FOOT
+		static [_schema:protected] => bool(true)
+		[_Asset:protected] => NULL
+		[_Module:protected] => NULL
+		[_originalData:protected] => Array(8) (
+			[slug] => string(5) index
+			[_id] => MongoId Object (
+				[$id:public] => string(24) 55023718ace34b2f0a6819cd
+			)
+			[_type] => string(18) ninja\ModPageModel
+			[Parent] => string(24) 55023718ace34b2f0a6819cb
+			[published] => bool(true)
+			[Modules] => Array(1) (
+				[columns] => Array(3) (
+					[_type] => string(23) ninja\ModContainerModel
+					[Contents] => Array(3) (
+						[left] => string(38)
+	Left dummy
 
-note how the 'staff' value of $Video->_data was converted to a collection
- object, and it's elements also on access. Relation objects can exist,
- created by, or referred by as object, data, or just ID.
+						[middle] => string(40)
+	Middle dummy
 
-this is how the Video object is defined:
+						[right] => string(39)
+	Right dummy
 
-    class Video extends \Model {
+					)
+					[cssClasses] => Array(1) (
+						[0] => string(3) row
+					)
+				)
+			)
+			[Root] => string(24) 55023718ace34b2f0a6819cb
+			[title] => string(26) Demo Application home page
+		)
+		[_data:protected] => Array(1) (
+			[Modules] => maui\Collection Object (
+				[_modelClassname:protected] => string(22) ninja\ModAbstractModel
+				[_data:protected] => Array(2) (
+					[columns] => Array(3) (
+						[_type] => string(23) ninja\ModContainerModel
+						[Contents] => Array(3) (
+							[left] => string(38)
+	Left dummy
 
-        protected static $_schema = array(
-            'user' => array(
-                'class' => 'User',
-                'referredField' => 'name',
-                'reference' => \SchemaManager::REF_REFERENCE,
-                'hasMin' => 1,
-                'hasMax' => 1,
-            ),
-            'category' => 'Category',
-            'rating' => array(
-                'toString',
-                'in' => array('G','PG','PG-13','R','NC-17'),
-            ),
-            'title' => array(
-                'toString',
-                'minLength' => 5,
-                'maxLength' => 30,
-            ),
-            'subtitle' => array(
-                'required',
-                'maxLength' => 50,
-            ),
-            'description',
-            'length' => array(
-                'label' => 'Play time',
-                'toInt',
-                'min' => 1,
-                'max' => 600,
-            ),
-            'director' => array(
-                'class' => 'Staff',
-                'reference' => \SchemaManager::REF_REFERENCE,
-            ),
-            'staff' => array(
-                'label' => 'Cast',
-                'class' => 'Staff',
-                'reference' => \SchemaManager::REF_INLINE, // defined as inline as REF_AUTO is to be implemented
-                'hasMin' => 0,
-                'hasMax' => 5,
-                'schema' => array(
-                    'name',
-                ),
-            )
-        );
-    }
+							[middle] => string(40)
+	Middle dummy
 
-and this is something you'd get by printing the schema of Video object, after
+							[right] => string(39)
+	Right dummy
+
+						)
+						[cssClasses] => Array(1) (
+							[0] => string(3) row
+						)
+					)
+					[newModule] => Array(2) (
+						[title] => string(10) New module
+						[html] => string(20) asd
+					)
+				)
+				[_matchedCount:protected] => NULL
+				[_pagesCount:protected] => NULL
+				[_filters:protected] => Array()
+			)
+		)
+	)
+
+note how the 'Modules' value of the $Page object was converted to a Collection
+instance as stored in $Page->_data while _originalData retains loaded value
+
+this is how the Page object is defined:
+
+	class ModPageModel extends \ModAbstractModel {
+
+		const JS_HEAD = 'HEAD';
+		const JS_FOOT = 'FOOT';
+
+		protected static $_schema = [
+			'@@extends' => 'ModBaseCssModel',
+			// override parent to set a specific type
+			'Parent' => [
+				'class' => 'ModPageModel',
+				'reference' => \SchemaManager::REF_REFERENCE,
+			],
+			'Root' => [
+				'class' => 'ModPageModel',
+				'reference' => \SchemaManager::REF_REFERENCE,
+			],
+			'slug' => [
+				'toString',
+				'required',
+				// @todo it would be nice to implement :)
+				//'uniqueInSiblings',
+				'regexp' => \SchemaValidatorRegexp::STRING_ALNUM38,
+			],
+			// @obsolete marked for deletion, needs code check
+			'doctype' => [
+				'default' => 'html'
+			],
+			'title',
+			'meta' => [
+				'toArray',
+				'keys' => ['name', 'content'],
+				'hasMin' => 0,
+				'hasMax' => 0,
+			],
+			'scripts' => [
+				'toArray',
+				'keys' => ['place', 'src', 'code'],
+				'keysValues' => ['place', [\ModPageModel::JS_HEAD, \ModPageModel::JS_FOOT]],
+				'keysEither' => ['src', 'code'],
+				'hasMax' => 0,
+			],
+			'script' => [
+				'toString',
+			],
+			'links' => [
+				'toArray',
+				'keys' => ['rel', 'href', 'media', 'onlyIf'],
+				'keysValues' => ['rel', ['stylesheet', 'import']],
+				'hasMax' => 0,
+			],
+			// @obsolete marked for deletion, needs code check
+			'baseHref',
+		];
+
+		/**
+		 * @var \ModPageModelAsset
+		 */
+		protected $_Asset;
+
+		public static function getDbCollectionName() {
+			return 'PageModelCollection';
+		}
+
+		/**
+		...
+
+		 */
+	}
+
+
+
+and this is something you'd get by
+
+	echop(\SchemaManager::getSchema($Page));
+
+printing the schema of Video object, after
  inflating (happens all automaticly):
+parent,root,slug,doctype,title,meta,scripts,script,links,basehref
+maui\Schema (
+	[_schema:protected] => Array(23) (
+		[_id] => maui\SchemaFieldAttr extends maui\SchemaFieldAbstract (
+			[_key:protected] => string(3) _id
+			[_required:protected] => bool(false)
+			[_validators:protected] => Array(1) (
+				[0] => maui\SchemaValidatorToId extends maui\\SchemaValidatorTo (
+					const [FORMAT] => /^[0-9a-f]{24}$/
+					[_value:protected] => string(4) toId
+					[_parent:protected] => *RECURSION*
+					[_isMulti:protected] => bool(false)
+				)
+			)
+			[_default:protected] => NULL
+			[_label:protected] => string(2) ID
+		)
+		[_type] => maui\SchemaFieldAttr extends maui\SchemaFieldAbstract (
+			[_key:protected] => string(5) _type
+			[_context:protected] => NULL
+			[_hasMin:protected] => NULL
+			[_hasMax:protected] => NULL
+			[_required:protected] => bool(false)
+			[_validators:protected] => Array(1) (
+				[0] => maui\SchemaValidatorToType extends maui\SchemaValidatorTo (
+					[_value:protected] => string(6) toType
+					[_parent:protected] => *RECURSION*
+					[_isMulti:protected] => bool(false)
+				)
+			)
+			[_default:protected] => NULL
+			[_label:protected] => string(4) type
+		)
+		[Parent] => maui\SchemaFieldRelative extends maui\SchemaFieldAbstract(
+			[_class:protected] => string(12) ModPageModel
+			[_reference:protected] => string(9) reference
+			[_referredField:protected] => string(3) _id
+			[_schema:protected] => NULL
+			[_key:protected] => string(6) Parent
+			[_context:protected] => NULL
+			[_hasMin:protected] => NULL
+			[_hasMax:protected] => NULL
+			[_required:protected] => bool(false)
+			[_validators:protected] => Array()
+			[_default:protected] => NULL
+			[_label:protected] => NULL
+		)
+		[published] => maui\SchemaFieldAttr extends maui\SchemaFieldAbstract (
+			[_key:protected] => string(9) published
+			[_context:protected] => NULL
+			[_hasMin:protected] => NULL
+			[_hasMax:protected] => NULL
+			[_required:protected] => bool(false)
+			[_validators:protected] => Array(1) (
+				[0] maui\SchemaValidatorToBool extends \SchemaValidatorTo (
+					[_value:protected] => string(6) toBool
+					[_parent:protected] => *RECURSION*
+					[_isMulti:protected] => bool(false)
+				)
+			)
+			[_default:protected] => NULL
+			[_label:protected] => NULL
+		)
+		[slug] => maui\SchemaFieldAttr extends ninja\SchemaFieldAbstract (
+			[_key:protected] => string(4) slug
+			[_context:protected] => NULL
+			[_hasMin:protected] => NULL
+			[_hasMax:protected] => NULL
+			[_required:protected] => bool(true)
+			[_validators:protected] => Array(2) (
+				[0] => maui\SchemaValidatorToString extends \SchemaValidatorTo (
+					[_value:protected] => string(8) toString
+					[_parent:protected] => *RECURSION*
+					[_isMulti:protected] => bool(false)
+				)
+				[1] => maui\SchemaValidatorRegexp extends maui\SchemaValidator (
+					const [STRING_ALNUM38] => /^[a-z0-9_\-]*$/
+					const [STRING_ALNUM64] => /^[a-zA-Z0-9_\-]*$/
+					[_value:protected] => string(16) /^[a-z0-9_\-]*$/
+					[_parent:protected] => *RECURSION*
+					[_isMulti:protected] => bool(false)
+				)
+			)
+			[_default:protected] => NULL
+			[_label:protected] => NULL
+		)
 
-    Maui\Schema Object (
-        [_schema:protected] => Array(10) (
-            [_id] => Maui\SchemaAttr Object (
-                [_key:protected] => string(3) _id
-                [_required:protected] => bool(false)
-                [_validators:protected] => Array(1) (
-                    [0] => Maui\SchemaValidatorToId extends Maui\SchemaValidatorTo (
-                        const [FORMAT] => /^[0-9a-f]{24}$/
-                        [_value:protected] => string(4) toId
-                        [_parent:protected] => *RECURSION*
-                    )
-                )
-                [_label:protected] => string(2) ID
-            )
-            [user] => Maui\SchemaRelative Object (
-                [_key:protected] => string(4) user
-                [_class:protected] => string(4) User
-                [_reference:protected] => string(9) reference
-                [_referredField:protected] => string(4) name
-                [_schema:protected] => NULL
-                [_validators:protected] => Array()
-                [_hasMin:protected] => string(1) 1
-                [_hasMax:protected] => string(1) 1
-                [_label:protected] => NULL
-            )
-            [category] => Maui\SchemaRelative Object (
-                [_key:protected] => string(8) category
-                [_class:protected] => string(8) Category
-                [_reference:protected] => string(6) inline
-                [_referredField:protected] => string(3) _id
-                [_schema:protected] => NULL
-                [_validators:protected] => Array()
-                [_hasMin:protected] => NULL
-                [_hasMax:protected] => NULL
-                [_label:protected] => NULL
-            )
-            [rating] => Maui\SchemaAttr Object (
-                [_key:protected] => string(6) rating
-                [_required:protected] => bool(false)
-                [_validators:protected] => Array(2) (
-                    [0] => Maui\SchemaValidatorToString extends Maui\SchemaValidatorTo (
-                        [_value:protected] => string(8) toString
-                        [_parent:protected] => *RECURSION*
-                    )
-                    [1] => Maui\SchemaValidatorIn extends Maui\SchemaValidator (
-                        [_value:protected] => Array(5) (
-                            [0] => string(1) G
-                            [1] => string(2) PG
-                            [2] => string(5) PG-13
-                            [3] => string(1) R
-                            [4] => string(5) NC-17
-                        )
-                        [_parent:protected] => *RECURSION*
-                    )
-                )
-                [_label:protected] => NULL
-            )
-            [title] => Maui\SchemaAttr Object (
-                [_key:protected] => string(5) title
-                [_required:protected] => bool(false)
-                [_validators:protected] => Array(3) (
-                    [0] => Maui\SchemaValidatorToString extends Maui\SchemaValidatorTo (
-                        [_value:protected] => string(8) toString
-                        [_parent:protected] => *RECURSION*
-                    )
-                    [1] => Maui\SchemaValidatorMinLength extends Maui\SchemaValidator (
-                        [_value:protected] => string(1) 5
-                        [_parent:protected] => *RECURSION*
-                    )
-                    [2] => Maui\SchemaValidatorMaxLength extends Maui\SchemaValidator (
-                        [_value:protected] => string(2) 30
-                        [_parent:protected] => *RECURSION*
-                    )
-                )
-                [_label:protected] => NULL
-            )
-            [subtitle] => Maui\SchemaAttr Object (
-                [_key:protected] => string(8) subtitle
-                [_required:protected] => bool(true)
-                [_validators:protected] => Array(1) (
-                    [0] => Maui\SchemaValidatorMaxLength extends Maui\SchemaValidator (
-                        [_value:protected] => string(2) 50
-                        [_parent:protected] => *RECURSION*
-                    )
-                )
-                [_label:protected] => NULL
-            )
-            [description] => Maui\SchemaAttr Object (
-                [_key:protected] => string(11) description
-                [_required:protected] => bool(false)
-                [_validators:protected] => Array()
-                [_label:protected] => NULL
-            )
-            [length] => Maui\SchemaAttr Object (
-                [_key:protected] => string(6) length
-                [_required:protected] => bool(false)
-                [_validators:protected] => Array(3) (
-                    [0] => Maui\SchemaValidatorToInt extends Maui\SchemaValidatorTo (
-                        [_value:protected] => string(5) toInt
-                        [_parent:protected] => *RECURSION*
-                    )
-                    [1] => Maui\SchemaValidatorMin extends Maui\SchemaValidator (
-                        [_value:protected] => string(1) 1
-                        [_parent:protected] => *RECURSION*
-                    )
-                    [2] => Maui\SchemaValidatorMax extends Maui\SchemaValidator (
-                        [_value:protected] => string(3) 600
-                        [_parent:protected] => *RECURSION*
-                    )
-                )
-                [_label:protected] => string(9) Play time
-            )
-            [director] => Maui\SchemaRelative Object (
-                [_key:protected] => string(8) director
-                [_class:protected] => string(5) Staff
-                [_reference:protected] => string(9) reference
-                [_referredField:protected] => string(3) _id
-                [_schema:protected] => NULL
-                [_validators:protected] => Array()
-                [_hasMin:protected] => NULL
-                [_hasMax:protected] => NULL
-                [_label:protected] => NULL
-            )
-            [staff] => Maui\SchemaRelative Object (
-                [_key:protected] => string(5) staff
-                [_class:protected] => string(5) Staff
-                [_reference:protected] => string(6) inline
-                [_referredField:protected] => string(3) _id
-                [_schema:protected] => Maui\Schema Object (
-                    [_schema:protected] => Array(1) (
-                        [name] => Maui\SchemaAttr Object (
-                            [_key:protected] => string(4) name
-                            [_required:protected] => bool(false)
-                            [_validators:protected] => Array()
-                            [_label:protected] => NULL
-                        )
-                    )
-                )
-                [_validators:protected] => Array()
-                [_hasMin:protected] => string(1) 0
-                [_hasMax:protected] => string(1) 5
-                [_label:protected] => NULL
-            )
-        )
-    )
+		...
 
-note the ID field is added automaticly and validator objects are created. The
- schema pool is shared and stored in the SchemaManager object to avoid static
- scope issues and unnecessary instances. Also, original schema definition is
- removed from the model class after inflation so it does not come up at printouts.
+	)
+)
+
+note the _id and _type fields are added automatically and validator objects are
+created. The schema pool is shared and stored in the SchemaManager object to
+avoid static scope issues and unnecessary instances. Also, original schema
+definition is removed from the model class after inflation.
 
 get a collection by filters with Mongo sytanx:
 

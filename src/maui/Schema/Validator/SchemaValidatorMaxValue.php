@@ -11,8 +11,8 @@ class SchemaValidatorMaxValue extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
-		return 'max ' . $this->_getValue($Model);
+	public function getError($val=null, $Model=null) {
+		return 'max ' . $this->_getValue($Model) . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

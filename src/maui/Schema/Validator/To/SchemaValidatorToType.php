@@ -20,7 +20,7 @@ class SchemaValidatorToType extends \SchemaValidatorTo {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
+	public function getError($val=null, $Model=null) {
 		return 'oops';
 	}
 

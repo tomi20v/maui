@@ -13,8 +13,8 @@ class SchemaValidatorDomainName extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
-		return 'is not domain name: ' . $val;
+	public function getError($val=null, $Model=null) {
+		return 'is not domain name: ' . $val . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

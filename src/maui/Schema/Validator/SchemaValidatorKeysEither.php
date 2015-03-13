@@ -20,8 +20,8 @@ class SchemaValidatorKeysEither extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
-		return 'can contain keys any but only one of (' . implode(', ', $this->_getValue($Model)) . '), but saw: ' . implode(', ', array_keys($val));
+	public function getError($val=null, $Model=null) {
+		return 'can contain keys any but only one of (' . implode(', ', $this->_getValue($Model)) . ')' . $this->_getSawValueString(func_num_args(), @implode(', ', @array_keys($val)), $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

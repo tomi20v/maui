@@ -12,6 +12,7 @@ abstract class Model extends \maui\Model {}
 class ModelBubbler extends \maui\ModelBubbler {}
 class ModelData extends \maui\ModelData {}
 class ModelFinder extends \maui\ModelFinder {}
+class ModelFinderConstraints extends \maui\ModelFinderConstraints {}
 class ModelManager extends \maui\ModelManager{}
 class ModelValidation extends \maui\ModelValidation{}
 class Schema extends \maui\Schema{}

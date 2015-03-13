@@ -11,8 +11,8 @@ class SchemaValidatorRegexp extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
-		return 'does not match: ' . $val;
+	public function getError($val=null, $Model=null) {
+		return 'does not match: ' . echon($this->_value) . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

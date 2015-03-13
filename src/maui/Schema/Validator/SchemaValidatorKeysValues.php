@@ -21,9 +21,9 @@ class SchemaValidatorKeysValues extends \SchemaValidator {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
+	public function getError($val=null, $Model=null) {
 		$key = $this->_value[0];
-		return 'value on key ' . $key . ' should be in (' . implode(', ', $this->_value[1]) . '), but saw: ' . @$val[$key];
+		return 'value on key ' . $key . ' should be in (' . implode(', ', $this->_value[1]) . ')' . $this->_getSawValueString(func_num_args(), @$val[$key], $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

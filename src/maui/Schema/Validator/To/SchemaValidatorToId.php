@@ -13,8 +13,8 @@ class SchemaValidatorToId extends \SchemaValidatorTo {
 		return null;
 	}
 
-	public function getError($val, $Model=null) {
-		return 'shall be an ID';
+	public function getError($val=null, $Model=null) {
+		return 'shall be an ID' . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

@@ -16,7 +16,7 @@ class SchemaValidatorUnique extends \SchemaValidator {
 		return true;
 	}
 
-	public function getError($val, $Model=null) {
+	public function getError($val=null, $Model=null) {
 		return 'not unique';
 	}
 
