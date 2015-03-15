@@ -12,7 +12,7 @@ class SchemaValidatorRegexp extends \SchemaValidator {
 	}
 
 	public function getError($val=null, $Model=null) {
-		return 'does not match: ' . echon($this->_value) . $this->_getSawValueString(func_num_args(), $val, $Model);
+		return 'does not match: ' . $this->_value . $this->_getSawValueString(func_num_args(), $val, $Model);
 	}
 
 	public function apply(&$val, $Model=null) {

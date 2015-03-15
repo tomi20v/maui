@@ -14,7 +14,7 @@ class SchemaFieldAttr extends \SchemaFieldAbstract {
 	/**
 	 * I build a nice schema attribute object
 	 *
-*@param array|\SchemaFieldAttr $attrSchema
+	 * @param array|\SchemaFieldAttr $attrSchema
 	 * @param string $context
 	 * @param string $key key in parent object
 	 * @return static
@@ -32,6 +32,7 @@ class SchemaFieldAttr extends \SchemaFieldAbstract {
 		}
 		elseif (is_array($attrSchema)) {
 			$SchemaAttr = new static();
+			$SchemaAttr->_context = $context;
 			foreach ($attrSchema as $eachKey=>$eachVal) {
 				switch (true) {
 					// 'label' => 'asd',

@@ -123,6 +123,7 @@ class SchemaFieldRelative extends \SchemaFieldAbstract {
 		if (!is_null($key) && !is_numeric($key)) {
 			$SchemaObject->_key = $key;
 		}
+		$SchemaObject->_context = $context;
 		return $SchemaObject;
 	}
 

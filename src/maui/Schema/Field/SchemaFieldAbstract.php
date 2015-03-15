@@ -120,4 +120,20 @@ abstract class SchemaFieldAbstract {
 		return $this->_default;
 	}
 
+	/**
+	 * @return string I return context where I was defined (class that carried my definition in its $_schema)
+	 */
+	public function getContext() {
+		return $this->_context;
+	}
+
+	/**
+	 * @param string I set context where I was defined (class that carried my definition in its $_schema)
+	 * @return $this
+	 */
+	public function setContext($context) {
+		$this->_context = $context;
+		return $this;
+	}
+
 }
