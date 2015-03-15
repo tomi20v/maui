@@ -180,7 +180,9 @@ class SchemaManager extends \Schema {
 				}
 				$extendSchema = \SchemaManager::getSchema($eachExtends);
 				foreach ($extendSchema as $eachKey=>$eachField) {
-					$ret->_schema[$eachKey] = $eachField;
+					$eachFieldCopy = clone $eachField;
+					$eachFieldCopy->setContext($eachExtends);
+					$ret->_schema[$eachKey] = $eachFieldCopy;
 				}
 			}
 			unset($schema['@@extends']);
