@@ -1,6 +1,11 @@
 Maui is a minimal MongoDB mapper for PHP
 Note this is a hobby project and is not and is not meant to be complete.
-Originally just a weekend project, now I have some days of work in it.
+Originally just a weekend project, now I have -some-days- some weeks of work
+in it. It now also serves as base for my 'ninja' project.
+
+v0.1.2 maintenance release - improved Collection data methods and
+	SchemaValidator classes, ModelFinderConstraints now enclose search data,
+	updated README.md
 
 The basic idea is to provide a framework:
  - define objects by schema, including their attributes and relations
@@ -374,5 +379,3 @@ this will give you something like:
     )
 
 (note: all printouts use echop pretty printer)
-
-
